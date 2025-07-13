@@ -1,12 +1,11 @@
-// START OF FILE pdfGenerator.js (تأكد أن هذا هو المحتوى في ملفك)
+// START OF FILE pdfGenerator.js
 
-const puppeteer = require('puppeteer');
-const path = require('path');
+const puppeteer = require('puppeteer'); // استخدام puppeteer
 
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
 
-    // --- !! تصميم HTML و CSS الاحترافي الجديد !! ---
+    // --- !! تصميم HTML و CSS الاحترافي الجديد الخاص بك !! ---
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -15,8 +14,8 @@ async function createCumulativePdfReport(stats, recentReviews) {
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
                 :root {
-                    --primary-color: #003c71;
-                    --secondary-color: #d4a75c;
+                    --primary-color: #003c71; /* Marriott Blue */
+                    --secondary-color: #d4a75c; /* Gold Accent */
                     --text-color: #333;
                     --light-gray: #f8f9fa;
                     --border-color: #dee2e6;
@@ -27,7 +26,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
                     padding: 0;
                     background-color: #fff;
                     color: var(--text-color);
-                    -webkit-print-color-adjust: exact;
+                    -webkit-print-color-adjust: exact; /* لضمان طباعة الألوان في PDF */
                 }
                 .page {
                     padding: 40px;
@@ -219,23 +218,25 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
     let browser = null;
     try {
+        // لا تحدد executablePath هنا؛ Puppeteer سيجد Chromium الذي سنقوم بتثبيته في Dockerfile.
         browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            headless: true, // ضروري للعمل في بيئات السيرفر
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] // ضروري لبيئات السيرفر
         });
         const page = await browser.newPage();
         
+        // تعيين Viewport كبير لضمان عرض كامل للعناصر وتجنب مشاكل التصميم في PDF
         await page.setViewport({ width: 1200, height: 1600 }); 
         
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true,
-            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
+            printBackground: true, // مهم جدًا لطباعة الألوان والخلفيات في التصميم
+            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } // تأكد من أن الهوامش صفر إذا كنت تريدها مدمجة بالكامل في الـ HTML
         });
         console.log(`📄 Professional PDF report generated.`);
-        return pdfBuffer;
+        return pdfBuffer; // نُعيد الـ Buffer مباشرة بدلاً من المسار
     } catch (error) {
         console.error("❌ Error during professional PDF generation:", error);
         throw error;
