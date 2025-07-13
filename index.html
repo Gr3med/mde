@@ -5,20 +5,288 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تقييم الإقامة | فندق ماريوت</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-    <style> /* ... نفس كود الـ CSS الكامل ... */ </style>
+    <style>
+        :root {
+            --primary-color: #003c71; /* Marriott Blue */
+            --secondary-color: #d4a75c; /* Gold Accent */
+            --background-color: #f8f9fa;
+            --form-background: #ffffff;
+            --text-color: #333;
+            --star-color: #ffc107;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--form-background);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 2em;
+        }
+
+        .form-header p {
+            color: #6c757d;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Tajawal', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 60, 113, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        .rating-group .stars {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+
+        .rating-group .stars input[type="radio"] {
+            display: none;
+        }
+
+        .rating-group .stars label {
+            font-size: 35px;
+            color: #e4e5e9;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            margin: 0 3px;
+        }
+
+        .rating-group .stars input[type="radio"]:checked ~ label,
+        .rating-group .stars label:hover,
+        .rating-group .stars label:hover ~ label {
+            color: var(--star-color);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            background-color: #002c52;
+        }
+
+        .submit-btn:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        .message-area {
+            min-height: 24px;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .message-area.show {
+            display: block;
+            opacity: 1;
+        }
+        
+        .message-area.success {
+            background-color: #e9f7ef;
+            color: var(--success-color);
+        }
+
+        .message-area.error {
+            background-color: #f8d7da;
+            color: var(--error-color);
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+            .form-header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
 </head>
 <body>
+
     <div class="container">
         <form id="evaluationForm">
-            <!-- ... نفس كود النموذج الكامل ... -->
+            <div class="form-header">
+                <h1>نقدّر رأيك في إقامتك</h1>
+                <p>ساعدنا لنقدم لك وللآخرين تجربة لا تُنسى.</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="roomNumber">رقم الغرفة</label>
+                <input type="text" id="roomNumber" name="roomNumber" placeholder="مثال: 304" required>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <div class="form-group rating-group">
+                <label>ما هو تقييمك لمستوى النظافة؟</label>
+                <div class="stars">
+                    <input type="radio" id="c5" name="cleanliness" value="5" required><label for="c5">★</label>
+                    <input type="radio" id="c4" name="cleanliness" value="4"><label for="c4">★</label>
+                    <input type="radio" id="c3" name="cleanliness" value="3"><label for="c3">★</label>
+                    <input type="radio" id="c2" name="cleanliness" value="2"><label for="c2">★</label>
+                    <input type="radio" id="c1" name="cleanliness" value="1"><label for="c1">★</label>
+                </div>
+            </div>
+
+            <div class="form-group rating-group">
+                <label>كيف تقيّم خدمات الاستقبال وسرعة الإجراءات؟</label>
+                <div class="stars">
+                    <input type="radio" id="r5" name="reception" value="5" required><label for="r5">★</label>
+                    <input type="radio" id="r4" name="reception" value="4"><label for="r4">★</label>
+                    <input type="radio" id="r3" name="reception" value="3"><label for="r3">★</label>
+                    <input type="radio" id="r2" name="reception" value="2"><label for="r2">★</label>
+                    <input type="radio" id="r1" name="reception" value="1"><label for="r1">★</label>
+                </div>
+            </div>
+
+            <div class="form-group rating-group">
+                <label>ما هو تقييمك للخدمات بشكل عام؟</label>
+                <div class="stars">
+                    <input type="radio" id="s5" name="services" value="5" required><label for="s5">★</label>
+                    <input type="radio" id="s4" name="services" value="4"><label for="s4">★</label>
+                    <input type="radio" id="s3" name="services" value="3"><label for="s3">★</label>
+                    <input type="radio" id="s2" name="services" value="2"><label for="s2">★</label>
+                    <input type="radio" id="s1" name="services" value="1"><label for="s1">★</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="comments">هل لديك أي ملاحظات أو اقتراحات أخرى؟</label>
+                <textarea id="comments" name="comments" placeholder="اكتب هنا عن أي شيء أعجبك أو لم يعجبك..."></textarea>
+            </div>
+
             <div id="message-area" class="message-area"></div>
+
             <button type="submit" id="submit-evaluation" class="submit-btn">إرسال التقييم</button>
         </form>
     </div>
+
     <script>
         const API_URL = `${window.location.origin}/api/review`;
+        
         const form = document.getElementById('evaluationForm');
-        // ... نفس كود الجافاسكريبت الكامل لإرسال النموذج ...
+        const submitBtn = document.getElementById('submit-evaluation');
+        const messageArea = document.getElementById('message-area');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'جاري الإرسال...';
+            showMessage('', ''); // إخفاء الرسائل القديمة
+
+            try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'حدث خطأ غير متوقع.');
+                }
+                
+                showMessage(result.message, 'success');
+                form.reset();
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showMessage(error.message || 'لا يمكن الاتصال بالسيرفر. يرجى المحاولة مرة أخرى.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'إرسال التقييم';
+            }
+        });
+
+        function showMessage(message, type) {
+            messageArea.textContent = message;
+            // استخدام className يضمن استبدال الكلاسات القديمة
+            messageArea.className = `message-area ${type} show`;
+        }
     </script>
+
 </body>
 </html>
