@@ -1,10 +1,8 @@
-// START OF FILE notifications.js
+// START OF FILE notifications.js (تأكد أن هذا هو المحتوى في ملفك)
 
 const nodemailer = require('nodemailer');
 const config = require('./config.js');
-// لم نعد بحاجة إلى pdf = require('html-pdf');
 
-// دالة لإرسال بريد إلكتروني، يمكن أن تحتوي على مرفقات
 async function sendReportEmail(subject, htmlContent, attachments = []) {
     if (!config.email.enabled) {
         console.log("ℹ️ Email notifications are disabled.");
@@ -16,8 +14,8 @@ async function sendReportEmail(subject, htmlContent, attachments = []) {
             from: `"تقارير الفندق" <${config.email.sender.auth.user}>`,
             to: config.email.recipient,
             subject: subject,
-            html: htmlContent, // البريد الإلكتروني نفسه لا يزال HTML
-            attachments: attachments // هنا نضيف المرفقات (الـ PDF buffer)
+            html: htmlContent,
+            attachments: attachments
         };
         console.log(`📤 Sending email to: ${config.email.recipient}...`);
         await transporter.sendMail(mailOptions);
@@ -28,6 +26,5 @@ async function sendReportEmail(subject, htmlContent, attachments = []) {
     }
 }
 
-// لم نعد نصدر generatePdf من هنا، بل sendReportEmail فقط.
-module.exports = { sendReportEmail }; 
+module.exports = { sendReportEmail };
 // END OF FILE notifications.js
