@@ -1,12 +1,12 @@
-// START OF FILE pdfGenerator.js
+// START OF FILE pdfGenerator.js (تأكد أن هذا هو المحتوى في ملفك)
 
-const puppeteer = require('puppeteer'); // استخدام puppeteer بدلاً من puppeteer-core
+const puppeteer = require('puppeteer');
 const path = require('path');
 
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
 
-    // ... (محتوى HTML والـ CSS الخاص بك كما هو) ...
+    // --- !! تصميم HTML و CSS الاحترافي الجديد !! ---
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -14,10 +14,9 @@ async function createCumulativePdfReport(stats, recentReviews) {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-                /* تضمين CSS الخاص بك */
                 :root {
-                    --primary-color: #003c71; /* Marriott Blue */
-                    --secondary-color: #d4a75c; /* Gold Accent */
+                    --primary-color: #003c71;
+                    --secondary-color: #d4a75c;
                     --text-color: #333;
                     --light-gray: #f8f9fa;
                     --border-color: #dee2e6;
@@ -28,7 +27,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
                     padding: 0;
                     background-color: #fff;
                     color: var(--text-color);
-                    -webkit-print-color-adjust: exact; /* لضمان طباعة الألوان في PDF */
+                    -webkit-print-color-adjust: exact;
                 }
                 .page {
                     padding: 40px;
@@ -226,7 +225,6 @@ async function createCumulativePdfReport(stats, recentReviews) {
         });
         const page = await browser.newPage();
         
-        // تعيين Viewport كبير لضمان عرض كامل للعناصر وتجنب مشاكل التصميم
         await page.setViewport({ width: 1200, height: 1600 }); 
         
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
