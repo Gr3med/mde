@@ -4,8 +4,6 @@
 FROM node:20-slim
 
 # قم بتثبيت المكتبات الأساسية التي يحتاجها Chromium ليعمل بشكل صحيح
-# بالإضافة إلى حزمة 'chromium' نفسها
-# تأكد من أن هذه الأوامر تعمل بنجاح لتثبيت التبعيات
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     fonts-liberation \
@@ -46,15 +44,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     && rm -rf /var/lib/apt/lists/* # تنظيف ملفات الـ apt المؤقتة لتقليل حجم الصورة
 
+# تعيين متغير البيئة للإنتاج
+ENV NODE_ENV=production
+
 # تعيين دليل العمل داخل الحاوية
 WORKDIR /usr/src/app
 
 # نسخ ملفات تعريف التبعيات (package.json و package-lock.json) أولاً
-# هذا يسمح لـ Docker بتخزين هذه الطبقة مؤقتًا إذا لم تتغير التبعيات
 COPY package*.json ./
 
-# **هذا هو الجزء المهم:** تشغيل npm install هنا، بعد نسخ ملفات package.json
-RUN npm install
+# **تغيير مهم:** استخدام npm ci لتثبيت التبعيات من package-lock.json
+# هذا يضمن تثبيتًا سريعًا ومتسقًا في بيئة النشر
+RUN npm ci
 
 # نسخ بقية ملفات التطبيق
 COPY . .
