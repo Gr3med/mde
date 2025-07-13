@@ -1,4 +1,4 @@
-// START OF FILE server.js (تأكد أن هذا هو المحتوى في ملفك)
+// START OF FILE server.js
 
 const express = require('express');
 const cors = require('cors');
@@ -6,7 +6,7 @@ const path = require('path');
 const { Client } = require('pg');
 require('dotenv').config();
 
-const { sendReportEmail } = require('./notifications.js');
+const { sendReportEmail } = require('./notifications.js'); // استيراد sendReportEmail
 const { createCumulativePdfReport } = require('./pdfGenerator.js'); // استيراد الدالة الجديدة لإنشاء الـ PDF
 const config = require('./config.js');
 
@@ -76,6 +76,7 @@ app.post('/api/review', async (req, res) => {
             const stats = statsRes.rows[0];
             const recentReviews = recentRes.rows;
             
+            // محتوى نص البريد الإلكتروني (يمكن أن يكون ملخصًا بسيطًا)
             let emailHtmlContent = `<div dir="rtl" style="font-family: Arial, sans-serif; line-height: 1.6;"><h2>📊 تقرير تقييمات تراكمي</h2><p><strong>إجمالي التقييمات:</strong> ${stats.total_reviews}</p><p><strong>معدل النظافة:</strong> ${Number(stats.avg_cleanliness).toFixed(2)} / 5</p><p><strong>معدل الاستقبال:</strong> ${Number(stats.avg_reception).toFixed(2)} / 5</p><p><strong>معدل الخدمات:</strong> ${Number(stats.avg_services).toFixed(2)} / 5</p><hr><h3>آخر 3 تقييمات:</h3><ul>`;
             recentReviews.forEach(r => {
                 emailHtmlContent += `<li><b>غرفة ${r.roomNumber}:</b> (نظافة: ${r.cleanliness}★) (استقبال: ${r.reception}★) (خدمات: ${r.services}★) - <em>${r.comments || 'لا تعليق'}</em></li>`;
@@ -84,16 +85,19 @@ app.post('/api/review', async (req, res) => {
 
             const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
             
+            // إنشاء ملف PDF احترافي باستخدام الدالة الجديدة
             const pdfBuffer = await createCumulativePdfReport(stats, recentReviews);
 
+            // إعداد المرفقات
             const attachments = [
                 {
-                    filename: `تقرير_تقييمات_فندق_ماريوت_${new Date().toISOString().slice(0, 10)}.pdf`,
-                    content: pdfBuffer,
-                    contentType: 'application/pdf'
+                    filename: `تقرير_تقييمات_فندق_ماريوت_${new Date().toISOString().slice(0, 10)}.pdf`, // اسم الملف
+                    content: pdfBuffer, // محتوى الـ PDF كـ Buffer
+                    contentType: 'application/pdf' // نوع المحتوى
                 }
             ];
 
+            // إرسال البريد الإلكتروني مع مرفق PDF
             await sendReportEmail(emailSubject, emailHtmlContent, attachments);
             
             newReviewsCounter = 0;
