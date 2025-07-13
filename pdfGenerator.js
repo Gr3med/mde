@@ -6,8 +6,7 @@ const path = require('path');
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
 
-    // --- !! تصميم HTML و CSS الاحترافي الجديد !! ---
-    // تأكد من تضمين خط Tajawal من Google Fonts
+    // ... (محتوى HTML والـ CSS الخاص بك كما هو) ...
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -221,15 +220,9 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
     let browser = null;
     try {
-        // تحديث المسار الخاص بـ Chromium ليتناسب مع بيئات Linux
-        // Puppeteer (النسخة الكاملة) تحاول البحث عن المتصفح تلقائياً.
-        // إذا كنت تستخدم puppeteer-core، قد تحتاج لتحديد المسار
-        // أما مع puppeteer، فغالباً ما يكون هذا السطر كافياً للتشغيل
-        // على Render (بعد تثبيت Chrome عبر build command)
         browser = await puppeteer.launch({
-            headless: true, // تأكد من أن headless: true لبيئات السيرفر
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] // ضروري لبيئات السيرفر
-            // executablePath: process.env.CHROME_BIN || null // يمكن استخدام هذا مع puppeteer-core أو إذا كان لديك مسار مخصص
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
         
@@ -240,11 +233,11 @@ async function createCumulativePdfReport(stats, recentReviews) {
         
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true, // ضروري لطباعة الألوان والخلفيات
-            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } // تأكد من أن الهوامش صفر إذا كانت في الـ HTML
+            printBackground: true,
+            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
         });
         console.log(`📄 Professional PDF report generated.`);
-        return pdfBuffer; // نُعيد الـ Buffer مباشرة بدلاً من المسار
+        return pdfBuffer;
     } catch (error) {
         console.error("❌ Error during professional PDF generation:", error);
         throw error;
