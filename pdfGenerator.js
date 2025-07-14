@@ -1,11 +1,17 @@
 // START OF FILE pdfGenerator.js
 
-const puppeteer = require('puppeteer'); // استخدام puppeteer
+const puppeteer = require('puppeteer');
 
+/**
+ * Creates a professional PDF report from statistics and recent reviews.
+ * @param {object} stats - The overall statistics (total_reviews, avg_cleanliness, etc.).
+ * @param {Array<object>} recentReviews - An array of the most recent review objects.
+ * @returns {Promise<{pdfBuffer: Buffer, htmlContent: string}>} - A promise that resolves to an object containing the PDF buffer and the generated HTML content.
+ */
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
 
-    // --- !! تصميم HTML و CSS الاحترافي الجديد الخاص بك !! ---
+    // --- Professional HTML & CSS design ---
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -26,7 +32,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
                     padding: 0;
                     background-color: #fff;
                     color: var(--text-color);
-                    -webkit-print-color-adjust: exact; /* لضمان طباعة الألوان في PDF */
+                    -webkit-print-color-adjust: exact; /* Ensures colors are printed in PDF */
                 }
                 .page {
                     padding: 40px;
@@ -67,7 +73,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 }
                 .summary-grid {
                     display: grid;
-                    grid-template-columns: repeat(2, 1fr);
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 20px;
                     margin-bottom: 30px;
                 }
@@ -157,7 +163,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 
                 <div class="summary-grid">
                     <div class="summary-card">
-                        <h3>إجمالي التقييمات المستلمة</h3>
+                        <h3>إجمالي التقييمات</h3>
                         <div class="score">${stats.total_reviews}</div>
                     </div>
                     <div class="summary-card">
@@ -200,9 +206,9 @@ async function createCumulativePdfReport(stats, recentReviews) {
                         ${recentReviews.map(review => `
                             <tr>
                                 <td>${review.roomNumber}</td>
-                                <td class="stars">${'★'.repeat(review.cleanliness)}${'☆'.repeat(5-review.cleanliness)}</td>
-                                <td class="stars">${'★'.repeat(review.reception)}${'☆'.repeat(5-review.reception)}</td>
-                                <td class="stars">${'★'.repeat(review.services)}${'☆'.repeat(5-review.services)}</td>
+                                <td class="stars">${'★'.repeat(review.cleanliness)}${'☆'.repeat(5 - review.cleanliness)}</td>
+                                <td class="stars">${'★'.repeat(review.reception)}${'☆'.repeat(5 - review.reception)}</td>
+                                <td class="stars">${'★'.repeat(review.services)}${'☆'.repeat(5 - review.services)}</td>
                                 <td class="comments-cell">${review.comments || '<em>لا يوجد</em>'}</td>
                             </tr>
                         `).join('')}
@@ -218,25 +224,28 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
     let browser = null;
     try {
-        // لا تحدد executablePath هنا؛ Puppeteer سيجد Chromium الذي سنقوم بتثبيته في Dockerfile.
+        // Launch Puppeteer for server environments (like Render).
+        // No executablePath is needed; Render's buildpacks install Chromium.
+        // The args are essential for running in a container.
         browser = await puppeteer.launch({
-            headless: true, // ضروري للعمل في بيئات السيرفر
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] // ضروري لبيئات السيرفر
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
         
-        // تعيين Viewport كبير لضمان عرض كامل للعناصر وتجنب مشاكل التصميم في PDF
-        await page.setViewport({ width: 1200, height: 1600 }); 
-        
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
         
+        // Generate the PDF and return it as a buffer.
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true, // مهم جدًا لطباعة الألوان والخلفيات في التصميم
-            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' } // تأكد من أن الهوامش صفر إذا كنت تريدها مدمجة بالكامل في الـ HTML
+            printBackground: true,
+            margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' }
         });
         console.log(`📄 Professional PDF report generated.`);
-        return pdfBuffer; // نُعيد الـ Buffer مباشرة بدلاً من المسار
+        
+        // Return both the PDF buffer and the HTML for use in the email.
+        return { pdfBuffer, htmlContent };
+
     } catch (error) {
         console.error("❌ Error during professional PDF generation:", error);
         throw error;
