@@ -1,6 +1,7 @@
-// START OF FILE pdfGenerator.js (FINAL VERSION FOR RENDER)
+// START OF FILE pdfGenerator.js (SIMPLE FIX)
 
 const puppeteer = require('puppeteer');
+const path = require('path');
 
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
@@ -119,9 +120,8 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
     let browser = null;
     try {
-        // الـ Buildpack سيقوم بتحديد مسار المتصفح تلقائيًا
-        // وهذه الإعدادات هي الأنسب لبيئة السيرفر
         browser = await puppeteer.launch({
+            // لا نحدد مسارًا هنا، Puppeteer سيجده بنفسه بعد التثبيت
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         
