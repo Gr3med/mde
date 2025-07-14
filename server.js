@@ -2,12 +2,11 @@
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const { Client } = require('pg');
 require('dotenv').config();
 
-// استيراد الدوال من الملف الجديد
-const { sendReportEmail, generatePdf } = require('./notifications.js');
+const { sendReportEmail } = require('./notifications.js');
+const { createCumulativePdfReport } = require('./pdfGenerator.js'); // استيراد مولد الـPDF الجديد
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,15 +56,13 @@ app.post('/api/review', async (req, res) => {
     try {
         const { roomNumber, cleanliness, reception, services, comments } = req.body;
         await dbClient.query('INSERT INTO reviews ("roomNumber", cleanliness, reception, services, comments) VALUES ($1, $2, $3, $4, $5)', [roomNumber, cleanliness, reception, services, comments]);
-        
-        newReviewsCounter++;
-        console.log(`📝 New review received. Counter is now: ${newReviewsCounter}`);
+        newReviewsCounter++; // زيادة العداد
 
         // إذا وصل العداد إلى 3 تقييمات أو أكثر، قم بإنشاء وإرسال التقرير
         if (newReviewsCounter >= 3) {
             console.log(`📬 Triggering report generation. Counter: ${newReviewsCounter}`);
-
-            // 1. جلب البيانات من قاعدة البيانات
+            
+            // جلب الإحصائيات الكلية
             const statsRes = await dbClient.query(`
                 SELECT 
                     COUNT(id) as total_reviews, 
@@ -74,33 +71,27 @@ app.post('/api/review', async (req, res) => {
                     AVG(services) as avg_services 
                 FROM reviews
             `);
-            const recentRes = await dbClient.query('SELECT "roomNumber", cleanliness, reception, services, comments, "createdAt" FROM reviews ORDER BY id DESC LIMIT 3');
+            // جلب آخر 3 تقييمات
+            const recentRes = await dbClient.query('SELECT * FROM reviews ORDER BY id DESC LIMIT 3');
             
             const stats = statsRes.rows[0];
             const recentReviews = recentRes.rows;
             
-            // 2. إنشاء ملف PDF الاحترافي
-            console.log("⏳ Generating professional PDF...");
-            const pdfBuffer = await generatePdf(stats, recentReviews);
-            console.log("✅ Professional PDF generated.");
-
-            // 3. إعداد البريد الإلكتروني والمرفقات
-            const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
-            // يمكن إنشاء نسخة HTML بسيطة للبريد الإلكتروني هنا إذا أردت
-            const emailHtmlBody = `<p dir="rtl">مرحباً،<br><br>تجدون في المرفقات تقرير الأداء الجديد.<br><br>مع خالص التقدير،<br>نظام التقارير الآلي</p>`;
+            // 1. إنشاء التقرير الاحترافي (PDF و HTML) باستخدام puppeteer
+            const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
             
+            // 2. إعداد المرفقات
             const attachments = [{
-                filename: `Marriott-Report-${new Date().toISOString().slice(0, 10)}.pdf`,
+                filename: `تقرير_التقييمات_${new Date().toISOString().slice(0, 10)}.pdf`,
                 content: pdfBuffer,
                 contentType: 'application/pdf'
             }];
 
-            // 4. إرسال البريد الإلكتروني
-            await sendReportEmail(emailSubject, emailHtmlBody, attachments);
+            // 3. إرسال البريد الإلكتروني مع التقرير كمرفق واستخدام نفس التصميم في متن الرسالة
+            const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
+            await sendReportEmail(emailSubject, htmlContent, attachments);
             
-            // 5. إعادة تعيين العداد
-            console.log("🔄 Resetting review counter.");
-            newReviewsCounter = 0; 
+            newReviewsCounter = 0; // إعادة تعيين العداد بعد إرسال التقرير
         }
 
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك.' });
