@@ -1,7 +1,8 @@
-// START OF FILE server.js
+// START OF FILE server.js (WITH SCHEDULED TASKS)
 
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const { Client } = require('pg');
 require('dotenv').config();
 
@@ -21,58 +22,15 @@ const dbClient = new Client({
 });
 
 let dbReady = false;
-let newReviewsCounter = 0;
 
-// دالة لإنشاء جدول التقييمات بالهيكل الجديد
-async function setupDatabase() {
-    console.log('Setting up database schema...');
-    // حذف الجدول القديم إذا كان موجودًا لضمان تطبيق الهيكل الجديد (مهم عند التغيير)
-    // تحذير: هذا سيحذف كل البيانات القديمة!
-    await dbClient.query('DROP TABLE IF EXISTS reviews;');
-    
-    // إنشاء الجدول بالهيكل الجديد
-    await dbClient.query(`
-        CREATE TABLE reviews (
-            id SERIAL PRIMARY KEY,
-            "roomNumber" VARCHAR(50),
-            reception INTEGER,
-            cleanliness INTEGER,
-            comfort INTEGER,
-            facilities INTEGER,
-            location INTEGER,
-            value INTEGER,
-            comments TEXT,
-            "createdAt" TIMESTAMPTZ DEFAULT NOW()
-        );
-    `);
-    console.log('✅ New database schema created successfully.');
-}
-
-
-app.listen(PORT, () => {
-    console.log(`🚀 Server is listening on port ${PORT}`);
-    dbClient.connect()
-        .then(() => {
-            console.log('✅ Connected to PostgreSQL DB.');
-            // استدعاء دالة إعداد قاعدة البيانات
-            return setupDatabase();
-        })
-        .then(() => {
-            dbReady = true;
-            console.log("✅ Database is ready to accept reviews.");
-        })
-        .catch(error => {
-            console.error('❌ CRITICAL: DB Connection/Setup Failed:', error);
-            // في حالة الفشل، حاول إعادة الاتصال بعد فترة
-            setTimeout(() => app.listen(PORT, () => console.log('Retrying server start...')), 5000);
-        });
-});
-
-
-async function generateAndSendReportInBackground() {
-    console.log("⚙️ Starting background report generation with new format...");
+// ------------------- دالة مركزية لإنشاء التقارير -------------------
+// period: 'daily', 'weekly', 'monthly'
+// title: 'التقرير اليومي', 'التقرير الأسبوعي', ...
+// interval: '1 DAY', '7 DAY', '1 MONTH'
+async function generateAndSendReport(period, title, interval) {
+    console.log(`[${new Date().toISOString()}] 🚀 Starting generation for ${title}...`);
     try {
-        const statsRes = await dbClient.query(`
+        const statsQuery = `
             SELECT 
                 COUNT(id) as total_reviews,
                 AVG(reception) as avg_reception,
@@ -82,29 +40,103 @@ async function generateAndSendReportInBackground() {
                 AVG(location) as avg_location,
                 AVG(value) as avg_value
             FROM reviews
-        `);
-        const recentRes = await dbClient.query('SELECT * FROM reviews ORDER BY id DESC LIMIT 5');
+            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
+        `;
+        const recentReviewsQuery = `
+            SELECT * FROM reviews 
+            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
+            ORDER BY id DESC
+        `;
         
+        const statsRes = await dbClient.query(statsQuery);
+        const recentRes = await dbClient.query(recentReviewsQuery);
+
         const stats = statsRes.rows[0];
         const recentReviews = recentRes.rows;
 
+        // إذا لم تكن هناك تقييمات في الفترة المحددة، لا ترسل التقرير
+        if (stats.total_reviews == 0) {
+            console.log(`ℹ️ No reviews found for the ${period} report. Skipping email.`);
+            return;
+        }
+
+        // إنشاء PDF ومحتوى HTML
         const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
         
         const attachments = [{
-            filename: `Hotel-Report-${new Date().toISOString().slice(0, 10)}.pdf`,
+            filename: `${period}-report-${new Date().toISOString().slice(0, 10)}.pdf`,
             content: pdfBuffer,
             contentType: 'application/pdf'
         }];
 
-        const emailSubject = `📊 تقرير تقييمات جديد (الإجمالي: ${stats.total_reviews})`;
+        const emailSubject = `📊 ${title} لتقييمات الفندق (${stats.total_reviews} تقييم)`;
         await sendReportEmail(emailSubject, htmlContent, attachments);
-        console.log("✅ New format report sent successfully.");
+        console.log(`✅ ${title} sent successfully.`);
 
     } catch (err) {
-        console.error("❌ CRITICAL: Background report generation failed:", err);
+        console.error(`❌ CRITICAL: Failed to generate ${title}:`, err);
     }
 }
 
+
+// ------------------- إعداد المهام المجدولة -------------------
+function setupScheduledTasks() {
+    // مهم: التوقيتات بتنسيق UTC. سيرفرات Render تعمل بـ UTC.
+    
+    // 1. التقرير اليومي: كل يوم في الساعة 11:55 مساءً بتوقيت UTC
+    // (يجمع بيانات آخر 24 ساعة)
+    cron.schedule('55 23 * * *', () => {
+        generateAndSendReport('daily', 'التقرير اليومي', '1 DAY');
+    }, {
+        timezone: "Etc/UTC"
+    });
+
+    // 2. التقرير الأسبوعي: كل يوم أحد في الساعة 11:50 مساءً بتوقيت UTC
+    // (يجمع بيانات آخر 7 أيام)
+    cron.schedule('50 23 * * 0', () => {
+        generateAndSendReport('weekly', 'التقرير الأسبوعي', '7 DAY');
+    }, {
+        timezone: "Etc/UTC"
+    });
+
+    // 3. التقرير الشهري: في اليوم الأول من كل شهر في الساعة 11:45 مساءً بتوقيت UTC
+    // (يجمع بيانات آخر شهر)
+    cron.schedule('45 23 1 * *', () => {
+        generateAndSendReport('monthly', 'التقرير الشهري', '1 MONTH');
+    }, {
+        timezone: "Etc/UTC"
+    });
+
+    console.log('✅ Scheduled tasks (daily, weekly, monthly) are set up.');
+}
+
+
+// ------------------- تشغيل السيرفر وقاعدة البيانات -------------------
+app.listen(PORT, () => {
+    console.log(`🚀 Server is listening on port ${PORT}`);
+    dbClient.connect()
+        .then(async () => {
+            console.log('✅ Connected to PostgreSQL DB.');
+            // التأكد من وجود الجدول، ولكن لا نحذف البيانات
+            await dbClient.query(`
+                CREATE TABLE IF NOT EXISTS reviews (
+                    id SERIAL PRIMARY KEY, "roomNumber" VARCHAR(50), reception INTEGER,
+                    cleanliness INTEGER, comfort INTEGER, facilities INTEGER, location INTEGER,
+                    value INTEGER, comments TEXT, "createdAt" TIMESTAMPTZ DEFAULT NOW()
+                );
+            `);
+            dbReady = true;
+            console.log("✅ Database is ready.");
+            // إعداد المهام المجدولة بعد التأكد من جاهزية كل شيء
+            setupScheduledTasks();
+        })
+        .catch(error => {
+            console.error('❌ CRITICAL: DB Connection/Setup Failed:', error);
+        });
+});
+
+// ------------------- نقطة النهاية لاستقبال التقييمات -------------------
+// تم إزالة عداد التقييمات. الآن يتم فقط حفظ البيانات.
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
@@ -118,14 +150,8 @@ app.post('/api/review', async (req, res) => {
         };
         
         await dbClient.query(query);
-        newReviewsCounter++;
 
-        if (newReviewsCounter >= 3) {
-            console.log(`🚀 Triggering background report. Counter: ${newReviewsCounter}.`);
-            generateAndSendReportInBackground();
-            newReviewsCounter = 0;
-        }
-
+        // تم إرسال الرد بنجاح، والتقارير ستُرسل لاحقًا بشكل مجدول
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك بنجاح.' });
 
     } catch (error) {
