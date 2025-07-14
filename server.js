@@ -1,4 +1,4 @@
-// START OF FILE server.js
+// START OF FILE server.js (VERSION WITH DETAILED LOGGING)
 
 const express = require('express');
 const cors = require('cors');
@@ -49,78 +49,62 @@ app.listen(PORT, () => {
         });
 });
 
-/**
- * دالة لإنشاء وإرسال التقرير في الخلفية لتجنب تعطيل الخادم.
- * يتم استدعاؤها بدون 'await' لتعمل بشكل غير متزامن.
- */
 async function generateAndSendReportInBackground() {
-    console.log("⚙️ Starting background report generation...");
+    console.log("---"); // Separator for clarity in logs
+    console.log("⚙️ [Step 1/5] Starting background report generation...");
     try {
-        // 1. جلب البيانات من قاعدة البيانات
-        const statsRes = await dbClient.query(`
-            SELECT 
-                COUNT(id) as total_reviews, 
-                AVG(cleanliness) as avg_cleanliness, 
-                AVG(reception) as avg_reception, 
-                AVG(services) as avg_services 
-            FROM reviews
-        `);
+        const statsRes = await dbClient.query(`SELECT COUNT(id) as total_reviews, AVG(cleanliness) as avg_cleanliness, AVG(reception) as avg_reception, AVG(services) as avg_services FROM reviews`);
+        console.log("⚙️ [Step 2/5] Successfully fetched stats from DB.");
+        
         const recentRes = await dbClient.query('SELECT * FROM reviews ORDER BY id DESC LIMIT 3');
+        console.log("⚙️ [Step 3/5] Successfully fetched recent reviews from DB.");
         
         const stats = statsRes.rows[0];
         const recentReviews = recentRes.rows;
 
-        // 2. إنشاء ملف PDF ومحتوى HTML (هذه هي العملية التي تستهلك الذاكرة)
+        console.log("⏳ [Step 4/5] Starting PDF generation (this is the memory-intensive part)...");
         const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
-        
-        // 3. تجهيز المرفقات للبريد الإلكتروني
+        console.log("✅ [Step 4.5/5] PDF generation completed successfully.");
+
         const attachments = [{
             filename: `تقرير_التقييمات_${new Date().toISOString().slice(0, 10)}.pdf`,
             content: pdfBuffer,
             contentType: 'application/pdf'
         }];
 
-        // 4. إرسال البريد الإلكتروني
+        console.log("⏳ [Step 5/5] Sending email with attachment...");
         const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
         await sendReportEmail(emailSubject, htmlContent, attachments);
         
-        console.log("✅ Background report generation and email sent successfully.");
+        console.log("🎉 SUCCESS: Background report and email sent.");
+        console.log("---");
 
     } catch (err) {
-        // تسجيل أي خطأ يحدث في الخلفية للمساعدة في التشخيص
-        console.error("❌ CRITICAL: Background report generation failed:", err);
+        console.error("❌ CRITICAL: Background report generation failed. Error details below:");
+        console.error(err);
+        console.log("---");
     }
 }
 
-// نقطة النهاية (Endpoint) لاستقبال التقييمات
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     }
     try {
         const { roomNumber, cleanliness, reception, services, comments } = req.body;
-        
-        // حفظ التقييم في قاعدة البيانات
         await dbClient.query('INSERT INTO reviews ("roomNumber", cleanliness, reception, services, comments) VALUES ($1, $2, $3, $4, $5)', [roomNumber, cleanliness, reception, services, comments]);
         newReviewsCounter++;
+        console.log(`Review received. Counter is now: ${newReviewsCounter}`);
 
-        // التحقق مما إذا كان الوقت مناسبًا لإرسال التقرير
         if (newReviewsCounter >= 3) {
-            console.log(`🚀 Triggering background report. Counter is now ${newReviewsCounter}.`);
-            
-            // **الحل:** استدعاء الدالة لتعمل في الخلفية (بدون await)
+            console.log(`🚀 Triggering background report generation. Counter is ${newReviewsCounter}.`);
             generateAndSendReportInBackground();
-            
-            // إعادة تعيين العداد فورًا حتى لا يتم حظر الطلبات التالية
             newReviewsCounter = 0;
-            console.log("Counter reset. Main request thread is free to respond.");
+            console.log("Counter reset. Main thread is responding to user.");
         }
-
-        // إرسال استجابة ناجحة للمستخدم على الفور
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك.' });
-
     } catch (error) {
-        console.error('❌ ERROR in /api/review endpoint (DB insert):', error);
+        console.error('❌ ERROR in /api/review endpoint:', error);
         res.status(500).json({ success: false, message: 'خطأ فادح في السيرفر.' });
     }
 });
