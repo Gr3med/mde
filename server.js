@@ -6,7 +6,6 @@ const { Client } = require('pg');
 require('dotenv').config();
 
 const { sendReportEmail } = require('./notifications.js');
-// نترك استدعاء pdfGenerator.js كما هو، لكننا لن نستخدمه مؤقتًا
 const { createCumulativePdfReport } = require('./pdfGenerator.js');
 
 const app = express();
@@ -50,56 +49,78 @@ app.listen(PORT, () => {
         });
 });
 
+/**
+ * دالة لإنشاء وإرسال التقرير في الخلفية لتجنب تعطيل الخادم.
+ * يتم استدعاؤها بدون 'await' لتعمل بشكل غير متزامن.
+ */
+async function generateAndSendReportInBackground() {
+    console.log("⚙️ Starting background report generation...");
+    try {
+        // 1. جلب البيانات من قاعدة البيانات
+        const statsRes = await dbClient.query(`
+            SELECT 
+                COUNT(id) as total_reviews, 
+                AVG(cleanliness) as avg_cleanliness, 
+                AVG(reception) as avg_reception, 
+                AVG(services) as avg_services 
+            FROM reviews
+        `);
+        const recentRes = await dbClient.query('SELECT * FROM reviews ORDER BY id DESC LIMIT 3');
+        
+        const stats = statsRes.rows[0];
+        const recentReviews = recentRes.rows;
+
+        // 2. إنشاء ملف PDF ومحتوى HTML (هذه هي العملية التي تستهلك الذاكرة)
+        const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
+        
+        // 3. تجهيز المرفقات للبريد الإلكتروني
+        const attachments = [{
+            filename: `تقرير_التقييمات_${new Date().toISOString().slice(0, 10)}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+        }];
+
+        // 4. إرسال البريد الإلكتروني
+        const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
+        await sendReportEmail(emailSubject, htmlContent, attachments);
+        
+        console.log("✅ Background report generation and email sent successfully.");
+
+    } catch (err) {
+        // تسجيل أي خطأ يحدث في الخلفية للمساعدة في التشخيص
+        console.error("❌ CRITICAL: Background report generation failed:", err);
+    }
+}
+
+// نقطة النهاية (Endpoint) لاستقبال التقييمات
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     }
     try {
         const { roomNumber, cleanliness, reception, services, comments } = req.body;
+        
+        // حفظ التقييم في قاعدة البيانات
         await dbClient.query('INSERT INTO reviews ("roomNumber", cleanliness, reception, services, comments) VALUES ($1, $2, $3, $4, $5)', [roomNumber, cleanliness, reception, services, comments]);
         newReviewsCounter++;
 
-        // إذا وصل العداد إلى 3 تقييمات أو أكثر
+        // التحقق مما إذا كان الوقت مناسبًا لإرسال التقرير
         if (newReviewsCounter >= 3) {
-            console.log(`📬 Triggering report generation. Counter: ${newReviewsCounter}`);
+            console.log(`🚀 Triggering background report. Counter is now ${newReviewsCounter}.`);
             
-            // --- START: TEMPORARILY DISABLED FOR DEBUGGING ---
-            console.log('⚠️ PDF generation is temporarily disabled to diagnose the server crash issue.');
-            // الكود التالي الخاص بإنشاء التقرير تم تجميده مؤقتًا
-            /*
-            const statsRes = await dbClient.query(`
-                SELECT 
-                    COUNT(id) as total_reviews, 
-                    AVG(cleanliness) as avg_cleanliness, 
-                    AVG(reception) as avg_reception, 
-                    AVG(services) as avg_services 
-                FROM reviews
-            `);
-            const recentRes = await dbClient.query('SELECT * FROM reviews ORDER BY id DESC LIMIT 3');
+            // **الحل:** استدعاء الدالة لتعمل في الخلفية (بدون await)
+            generateAndSendReportInBackground();
             
-            const stats = statsRes.rows[0];
-            const recentReviews = recentRes.rows;
-            
-            const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
-            
-            const attachments = [{
-                filename: `تقرير_التقييمات_${new Date().toISOString().slice(0, 10)}.pdf`,
-                content: pdfBuffer,
-                contentType: 'application/pdf'
-            }];
-
-            const emailSubject = `📊 تقرير تقييمات فوري (الإجمالي: ${stats.total_reviews})`;
-            await sendReportEmail(emailSubject, htmlContent, attachments);
-            */
-            // --- END: TEMPORARILY DISABLED FOR DEBUGGING ---
-            
-            newReviewsCounter = 0; // إعادة تعيين العداد
-            console.log('Counter reset. Skipping PDF generation for now.');
+            // إعادة تعيين العداد فورًا حتى لا يتم حظر الطلبات التالية
+            newReviewsCounter = 0;
+            console.log("Counter reset. Main request thread is free to respond.");
         }
 
+        // إرسال استجابة ناجحة للمستخدم على الفور
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك.' });
+
     } catch (error) {
-        console.error('❌ ERROR in /api/review:', error);
+        console.error('❌ ERROR in /api/review endpoint (DB insert):', error);
         res.status(500).json({ success: false, message: 'خطأ فادح في السيرفر.' });
     }
 });
