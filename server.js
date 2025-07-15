@@ -1,4 +1,4 @@
-// START OF FILE server.js (WITH SCHEDULED TASKS)
+// START OF FILE server.js (WITH KSA TIMEZONE)
 
 const express = require('express');
 const cors = require('cors');
@@ -24,9 +24,6 @@ const dbClient = new Client({
 let dbReady = false;
 
 // ------------------- دالة مركزية لإنشاء التقارير -------------------
-// period: 'daily', 'weekly', 'monthly'
-// title: 'التقرير اليومي', 'التقرير الأسبوعي', ...
-// interval: '1 DAY', '7 DAY', '1 MONTH'
 async function generateAndSendReport(period, title, interval) {
     console.log(`[${new Date().toISOString()}] 🚀 Starting generation for ${title}...`);
     try {
@@ -54,13 +51,11 @@ async function generateAndSendReport(period, title, interval) {
         const stats = statsRes.rows[0];
         const recentReviews = recentRes.rows;
 
-        // إذا لم تكن هناك تقييمات في الفترة المحددة، لا ترسل التقرير
         if (stats.total_reviews == 0) {
             console.log(`ℹ️ No reviews found for the ${period} report. Skipping email.`);
             return;
         }
 
-        // إنشاء PDF ومحتوى HTML
         const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
         
         const attachments = [{
@@ -78,38 +73,33 @@ async function generateAndSendReport(period, title, interval) {
     }
 }
 
-
-// ------------------- إعداد المهام المجدولة -------------------
+// ------------------- إعداد المهام المجدولة بتوقيت السعودية -------------------
 function setupScheduledTasks() {
-    // مهم: التوقيتات بتنسيق UTC. سيرفرات Render تعمل بـ UTC.
-    
-    // 1. التقرير اليومي: كل يوم في الساعة 11:55 مساءً بتوقيت UTC
-    // (يجمع بيانات آخر 24 ساعة)
-    cron.schedule('55 23 * * *', () => {
+    console.log('✅ Setting up scheduled tasks for KSA timezone (Asia/Riyadh)...');
+    const ksaTimezone = 'Asia/Riyadh';
+
+    // 1. التقرير اليومي: كل يوم الساعة 8:00 صباحًا بتوقيت السعودية.
+    cron.schedule('0 8 * * *', () => {
         generateAndSendReport('daily', 'التقرير اليومي', '1 DAY');
     }, {
-        timezone: "Etc/UTC"
+        timezone: ksaTimezone
     });
 
-    // 2. التقرير الأسبوعي: كل يوم أحد في الساعة 11:50 مساءً بتوقيت UTC
-    // (يجمع بيانات آخر 7 أيام)
-    cron.schedule('50 23 * * 0', () => {
+    // 2. التقرير الأسبوعي: كل يوم أحد الساعة 8:30 صباحًا بتوقيت السعودية.
+    cron.schedule('30 8 * * 0', () => { // 0 = Sunday
         generateAndSendReport('weekly', 'التقرير الأسبوعي', '7 DAY');
     }, {
-        timezone: "Etc/UTC"
+        timezone: ksaTimezone
     });
 
-    // 3. التقرير الشهري: في اليوم الأول من كل شهر في الساعة 11:45 مساءً بتوقيت UTC
-    // (يجمع بيانات آخر شهر)
-    cron.schedule('45 23 1 * *', () => {
+    // 3. التقرير الشهري: في اليوم الأول من كل شهر الساعة 9:00 صباحًا بتوقيت السعودية.
+    // سيجمع بيانات الشهر الماضي بأكمله.
+    cron.schedule('0 9 1 * *', () => {
         generateAndSendReport('monthly', 'التقرير الشهري', '1 MONTH');
     }, {
-        timezone: "Etc/UTC"
+        timezone: ksaTimezone
     });
-
-    console.log('✅ Scheduled tasks (daily, weekly, monthly) are set up.');
 }
-
 
 // ------------------- تشغيل السيرفر وقاعدة البيانات -------------------
 app.listen(PORT, () => {
@@ -117,7 +107,6 @@ app.listen(PORT, () => {
     dbClient.connect()
         .then(async () => {
             console.log('✅ Connected to PostgreSQL DB.');
-            // التأكد من وجود الجدول، ولكن لا نحذف البيانات
             await dbClient.query(`
                 CREATE TABLE IF NOT EXISTS reviews (
                     id SERIAL PRIMARY KEY, "roomNumber" VARCHAR(50), reception INTEGER,
@@ -127,7 +116,6 @@ app.listen(PORT, () => {
             `);
             dbReady = true;
             console.log("✅ Database is ready.");
-            // إعداد المهام المجدولة بعد التأكد من جاهزية كل شيء
             setupScheduledTasks();
         })
         .catch(error => {
@@ -136,7 +124,6 @@ app.listen(PORT, () => {
 });
 
 // ------------------- نقطة النهاية لاستقبال التقييمات -------------------
-// تم إزالة عداد التقييمات. الآن يتم فقط حفظ البيانات.
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
@@ -150,8 +137,6 @@ app.post('/api/review', async (req, res) => {
         };
         
         await dbClient.query(query);
-
-        // تم إرسال الرد بنجاح، والتقارير ستُرسل لاحقًا بشكل مجدول
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك بنجاح.' });
 
     } catch (error) {
