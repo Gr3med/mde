@@ -1,8 +1,8 @@
-// START OF FILE server.js (TESTING VERSION)
+// START OF FILE server.js (WITH KSA TIMEZONE)
 
 const express = require('express');
 const cors = require('cors');
-// const cron = require('node-cron'); // لا نحتاج للجدولة في النسخة التجريبية
+const cron = require('node-cron');
 const { Client } = require('pg');
 require('dotenv').config();
 
@@ -22,30 +22,27 @@ const dbClient = new Client({
 });
 
 let dbReady = false;
-let newReviewsCounter = 0;
-const REVIEWS_THRESHOLD = 3; // <-- غير هذا الرقم إلى 5 إذا أردت
 
-// ------------------- دالة مركزية لإنشاء التقارير (للتجربة) -------------------
+// ------------------- دالة مركزية لإنشاء التقارير -------------------
 async function generateAndSendReport(period, title, interval) {
-    console.log(`[TEST RUN] 🚀 Starting generation for ${title}...`);
+    console.log(`[${new Date().toISOString()}] 🚀 Starting generation for ${title}...`);
     try {
-        // في النسخة التجريبية، سنجمع آخر 5 تقييمات لكل التقارير
-        const recentReviewsQuery = `
-            SELECT * FROM reviews 
-            ORDER BY id DESC
-            LIMIT 5
-        `;
-        // ونحسب الإحصائيات بناءً عليها
         const statsQuery = `
-            WITH recent_reviews AS (
-                SELECT * FROM reviews ORDER BY id DESC LIMIT 5
-            )
             SELECT 
                 COUNT(id) as total_reviews,
-                AVG(reception) as avg_reception, AVG(cleanliness) as avg_cleanliness,
-                AVG(comfort) as avg_comfort, AVG(facilities) as avg_facilities,
-                AVG(location) as avg_location, AVG(value) as avg_value
-            FROM recent_reviews
+                AVG(reception) as avg_reception,
+                AVG(cleanliness) as avg_cleanliness,
+                AVG(comfort) as avg_comfort,
+                AVG(facilities) as avg_facilities,
+                AVG(location) as avg_location,
+                AVG(value) as avg_value
+            FROM reviews
+            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
+        `;
+        const recentReviewsQuery = `
+            SELECT * FROM reviews 
+            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
+            ORDER BY id DESC
         `;
         
         const statsRes = await dbClient.query(statsQuery);
@@ -55,38 +52,54 @@ async function generateAndSendReport(period, title, interval) {
         const recentReviews = recentRes.rows;
 
         if (stats.total_reviews == 0) {
-            console.log(`[TEST RUN] ℹ️ No reviews found for ${title}. Skipping.`);
+            console.log(`ℹ️ No reviews found for the ${period} report. Skipping email.`);
             return;
         }
 
         const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
         
         const attachments = [{
-            filename: `TEST-${period}-report-${new Date().toISOString().slice(0, 10)}.pdf`,
+            filename: `${period}-report-${new Date().toISOString().slice(0, 10)}.pdf`,
             content: pdfBuffer,
             contentType: 'application/pdf'
         }];
 
-        const emailSubject = `📊 [تجريبي] ${title} (${stats.total_reviews} تقييم)`;
+        const emailSubject = `📊 ${title} لتقييمات الفندق (${stats.total_reviews} تقييم)`;
         await sendReportEmail(emailSubject, htmlContent, attachments);
-        console.log(`[TEST RUN] ✅ ${title} sent successfully.`);
+        console.log(`✅ ${title} sent successfully.`);
 
     } catch (err) {
-        console.error(`[TEST RUN] ❌ CRITICAL: Failed to generate ${title}:`, err);
+        console.error(`❌ CRITICAL: Failed to generate ${title}:`, err);
     }
 }
 
+// ------------------- إعداد المهام المجدولة بتوقيت السعودية -------------------
+function setupScheduledTasks() {
+    console.log('✅ Setting up scheduled tasks for KSA timezone (Asia/Riyadh)...');
+    const ksaTimezone = 'Asia/Riyadh';
 
-// ------------------- دالة تشغيل التقارير التجريبية -------------------
-async function runAllTestReports() {
-    console.log("--- Starting Test Report Generation ---");
-    // استدعاء التقارير الثلاثة واحدًا تلو الآخر
-    await generateAndSendReport('daily', 'التقرير اليومي', '1 DAY');
-    await generateAndSendReport('weekly', 'التقرير الأسبوعي', '7 DAY');
-    await generateAndSendReport('monthly', 'التقرير الشهري', '1 MONTH');
-    console.log("--- Finished Test Report Generation ---");
+    // 1. التقرير اليومي: كل يوم الساعة 8:00 صباحًا بتوقيت السعودية.
+    cron.schedule('0 8 * * *', () => {
+        generateAndSendReport('daily', 'التقرير اليومي', '1 DAY');
+    }, {
+        timezone: ksaTimezone
+    });
+
+    // 2. التقرير الأسبوعي: كل يوم أحد الساعة 8:30 صباحًا بتوقيت السعودية.
+    cron.schedule('30 8 * * 0', () => { // 0 = Sunday
+        generateAndSendReport('weekly', 'التقرير الأسبوعي', '7 DAY');
+    }, {
+        timezone: ksaTimezone
+    });
+
+    // 3. التقرير الشهري: في اليوم الأول من كل شهر الساعة 9:00 صباحًا بتوقيت السعودية.
+    // سيجمع بيانات الشهر الماضي بأكمله.
+    cron.schedule('0 9 1 * *', () => {
+        generateAndSendReport('monthly', 'التقرير الشهري', '1 MONTH');
+    }, {
+        timezone: ksaTimezone
+    });
 }
-
 
 // ------------------- تشغيل السيرفر وقاعدة البيانات -------------------
 app.listen(PORT, () => {
@@ -102,14 +115,15 @@ app.listen(PORT, () => {
                 );
             `);
             dbReady = true;
-            console.log("✅ Database is ready for TESTING MODE.");
+            console.log("✅ Database is ready.");
+            setupScheduledTasks();
         })
         .catch(error => {
             console.error('❌ CRITICAL: DB Connection/Setup Failed:', error);
         });
 });
 
-// ------------------- نقطة النهاية لاستقبال التقييمات (النسخة التجريبية) -------------------
+// ------------------- نقطة النهاية لاستقبال التقييمات -------------------
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
@@ -123,20 +137,6 @@ app.post('/api/review', async (req, res) => {
         };
         
         await dbClient.query(query);
-        newReviewsCounter++;
-        console.log(`Review received. Counter is now: ${newReviewsCounter}/${REVIEWS_THRESHOLD}`);
-
-        // التحقق من الوصول إلى العدد المطلوب من التقييمات
-        if (newReviewsCounter >= REVIEWS_THRESHOLD) {
-            console.log(`🚀 Threshold reached! Triggering all test reports.`);
-            
-            // تشغيل دالة إرسال التقارير التجريبية (لا نحتاج لـ await هنا)
-            runAllTestReports(); 
-            
-            newReviewsCounter = 0; // إعادة تعيين العداد
-            console.log("Counter reset. Main thread responding to user.");
-        }
-
         res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك بنجاح.' });
 
     } catch (error) {
