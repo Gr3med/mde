@@ -1,11 +1,33 @@
-// START OF FILE pdfGenerator.js
+// START OF FILE pdfGenerator.js (WITH TEXT-BASED RATINGS)
 
 const puppeteer = require('puppeteer');
+
+// دالة مساعدة لترجمة التقييم الرقمي إلى نص
+function getRatingText(rating) {
+    // نحول القيمة إلى رقم لضمان المقارنة الصحيحة
+    switch (parseInt(rating, 10)) {
+        case 5: return 'ممتاز';
+        case 4: return 'جيد جداً';
+        case 3: return 'جيد';
+        case 2: return 'مقبول';
+        case 1: return 'ضعيف';
+        default: return '-'; // في حال كانت القيمة غير موجودة
+    }
+}
+
+// دالة مساعدة لتلوين النص بناءً على جودة التقييم
+function getRatingColor(rating) {
+    const r = parseInt(rating, 10);
+    if (r >= 4) return '#28a745'; // أخضر للتقييمات العالية (ممتاز وجيد جداً)
+    if (r === 3) return '#ffc107'; // أصفر للتقييم المتوسط (جيد)
+    if (r <= 2) return '#dc3545'; // أحمر للتقييمات المنخفضة (مقبول وضعيف)
+    return '#6c757d'; // رمادي للحالات الأخرى
+}
+
 
 async function createCumulativePdfReport(stats, recentReviews) {
     const today = new Date();
 
-    // حساب المتوسط العام الجديد
     const overallAvg = (
         (parseFloat(stats.avg_reception) || 0) +
         (parseFloat(stats.avg_cleanliness) || 0) +
@@ -36,11 +58,11 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 .summary-card h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--primary-color); font-weight: 500; }
                 .summary-card .score { font-size: 36px; font-weight: 700; color: var(--secondary-color); }
                 .summary-card .score small { font-size: 18px; color: #6c757d; }
-                .review-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-                .review-table th, .review-table td { border: 1px solid var(--border-color); padding: 10px; text-align: center; }
+                .review-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+                .review-table th, .review-table td { border: 1px solid var(--border-color); padding: 12px; text-align: center; vertical-align: middle;}
                 .review-table thead { background-color: var(--primary-color); color: white; font-weight: 700; }
                 .review-table tbody tr:nth-child(even) { background-color: var(--light-gray); }
-                .review-table .stars { color: var(--secondary-color); font-size: 16px; white-space: nowrap; }
+                .rating-cell { font-weight: bold; }
                 .comments-cell { text-align: right !important; max-width: 250px; white-space: pre-wrap; word-wrap: break-word; }
                 .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 12px; color: #999; }
             </style>
@@ -57,14 +79,8 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
                 <div class="section-title">ملخص الأداء العام</div>
                 <div class="summary-grid">
-                    <div class="summary-card">
-                        <h3>إجمالي التقييمات</h3>
-                        <div class="score">${stats.total_reviews}</div>
-                    </div>
-                    <div class="summary-card">
-                        <h3>المتوسط العام</h3>
-                        <div class="score">${overallAvg.toFixed(2)}<small>/5</small></div>
-                    </div>
+                    <div class="summary-card"><h3>إجمالي التقييمات</h3><div class="score">${stats.total_reviews}</div></div>
+                    <div class="summary-card"><h3>المتوسط العام</h3><div class="score">${overallAvg.toFixed(2)}<small>/5</small></div></div>
                     <div class="summary-card"><h3>الاستقبال</h3><div class="score">${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</div></div>
                     <div class="summary-card"><h3>النظافة</h3><div class="score">${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</div></div>
                     <div class="summary-card"><h3>راحة الغرفة</h3><div class="score">${(parseFloat(stats.avg_comfort) || 0).toFixed(2)}</div></div>
@@ -91,12 +107,12 @@ async function createCumulativePdfReport(stats, recentReviews) {
                         ${recentReviews.map(review => `
                             <tr>
                                 <td>${review.roomNumber}</td>
-                                <td class="stars">${'★'.repeat(review.reception)}</td>
-                                <td class="stars">${'★'.repeat(review.cleanliness)}</td>
-                                <td class="stars">${'★'.repeat(review.comfort)}</td>
-                                <td class="stars">${'★'.repeat(review.facilities)}</td>
-                                <td class="stars">${'★'.repeat(review.location)}</td>
-                                <td class="stars">${'★'.repeat(review.value)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.reception)};">${getRatingText(review.reception)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.cleanliness)};">${getRatingText(review.cleanliness)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.comfort)};">${getRatingText(review.comfort)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.facilities)};">${getRatingText(review.facilities)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.location)};">${getRatingText(review.location)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.value)};">${getRatingText(review.value)}</td>
                                 <td class="comments-cell">${review.comments || '<em>-</em>'}</td>
                             </tr>
                         `).join('')}
