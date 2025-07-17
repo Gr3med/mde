@@ -1,8 +1,7 @@
-// START OF FILE server.js (WITH KSA TIMEZONE)
+// START OF FILE server.js (TESTING VERSION - WITH CORRECT EMAIL BODY)
 
 const express = require('express');
 const cors = require('cors');
-const cron = require('node-cron');
 const { Client } = require('pg');
 require('dotenv').config();
 
@@ -22,27 +21,21 @@ const dbClient = new Client({
 });
 
 let dbReady = false;
+let newReviewsCounter = 0;
+const REVIEWS_THRESHOLD = 3;
 
-// ------------------- دالة مركزية لإنشاء التقارير -------------------
-async function generateAndSendReport(period, title, interval) {
-    console.log(`[${new Date().toISOString()}] 🚀 Starting generation for ${title}...`);
+async function generateAndSendReport(period, title) {
+    console.log(`[TEST RUN] 🚀 Starting generation for ${title}...`);
     try {
+        const recentReviewsQuery = `SELECT * FROM reviews ORDER BY id DESC LIMIT 5`;
         const statsQuery = `
+            WITH recent_reviews AS (SELECT * FROM reviews ORDER BY id DESC LIMIT 5)
             SELECT 
                 COUNT(id) as total_reviews,
-                AVG(reception) as avg_reception,
-                AVG(cleanliness) as avg_cleanliness,
-                AVG(comfort) as avg_comfort,
-                AVG(facilities) as avg_facilities,
-                AVG(location) as avg_location,
-                AVG(value) as avg_value
-            FROM reviews
-            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
-        `;
-        const recentReviewsQuery = `
-            SELECT * FROM reviews 
-            WHERE "createdAt" >= NOW() - INTERVAL '${interval}'
-            ORDER BY id DESC
+                AVG(reception) as avg_reception, AVG(cleanliness) as avg_cleanliness,
+                AVG(comfort) as avg_comfort, AVG(facilities) as avg_facilities,
+                AVG(location) as avg_location, AVG(value) as avg_value
+            FROM recent_reviews
         `;
         
         const statsRes = await dbClient.query(statsQuery);
@@ -52,56 +45,41 @@ async function generateAndSendReport(period, title, interval) {
         const recentReviews = recentRes.rows;
 
         if (stats.total_reviews == 0) {
-            console.log(`ℹ️ No reviews found for the ${period} report. Skipping email.`);
+            console.log(`[TEST RUN] ℹ️ No reviews found for ${title}. Skipping.`);
             return;
         }
 
-        const { pdfBuffer, htmlContent } = await createCumulativePdfReport(stats, recentReviews);
+        // *** التغيير المهم ***
+        // الآن نستقبل نسختين من الـ HTML
+        const { pdfBuffer, emailHtmlContent } = await createCumulativePdfReport(stats, recentReviews);
         
         const attachments = [{
-            filename: `${period}-report-${new Date().toISOString().slice(0, 10)}.pdf`,
+            filename: `TEST-${period}-report-${new Date().toISOString().slice(0, 10)}.pdf`,
             content: pdfBuffer,
             contentType: 'application/pdf'
         }];
 
-        const emailSubject = `📊 ${title} لتقييمات الفندق (${stats.total_reviews} تقييم)`;
-        await sendReportEmail(emailSubject, htmlContent, attachments);
-        console.log(`✅ ${title} sent successfully.`);
+        const emailSubject = `📊 [تجريبي] ${title} (${stats.total_reviews} تقييم)`;
+        
+        // *** التغيير المهم ***
+        // نرسل النسخة المبسطة في متن البريد الإلكتروني
+        await sendReportEmail(emailSubject, emailHtmlContent, attachments);
+        console.log(`[TEST RUN] ✅ ${title} sent successfully.`);
 
     } catch (err) {
-        console.error(`❌ CRITICAL: Failed to generate ${title}:`, err);
+        console.error(`[TEST RUN] ❌ CRITICAL: Failed to generate ${title}:`, err);
     }
 }
 
-// ------------------- إعداد المهام المجدولة بتوقيت السعودية -------------------
-function setupScheduledTasks() {
-    console.log('✅ Setting up scheduled tasks for KSA timezone (Asia/Riyadh)...');
-    const ksaTimezone = 'Asia/Riyadh';
-
-    // 1. التقرير اليومي: كل يوم الساعة 8:00 صباحًا بتوقيت السعودية.
-    cron.schedule('0 8 * * *', () => {
-        generateAndSendReport('daily', 'التقرير اليومي', '1 DAY');
-    }, {
-        timezone: ksaTimezone
-    });
-
-    // 2. التقرير الأسبوعي: كل يوم أحد الساعة 8:30 صباحًا بتوقيت السعودية.
-    cron.schedule('30 8 * * 0', () => { // 0 = Sunday
-        generateAndSendReport('weekly', 'التقرير الأسبوعي', '7 DAY');
-    }, {
-        timezone: ksaTimezone
-    });
-
-    // 3. التقرير الشهري: في اليوم الأول من كل شهر الساعة 9:00 صباحًا بتوقيت السعودية.
-    // سيجمع بيانات الشهر الماضي بأكمله.
-    cron.schedule('0 9 1 * *', () => {
-        generateAndSendReport('monthly', 'التقرير الشهري', '1 MONTH');
-    }, {
-        timezone: ksaTimezone
-    });
+async function runAllTestReports() {
+    console.log("--- Starting Test Report Generation ---");
+    await generateAndSendReport('daily', 'التقرير اليومي');
+    await generateAndSendReport('weekly', 'التقرير الأسبوعي');
+    await generateAndSendReport('monthly', 'التقرير الشهري');
+    console.log("--- Finished Test Report Generation ---");
 }
 
-// ------------------- تشغيل السيرفر وقاعدة البيانات -------------------
+// ... (بقية كود تشغيل السيرفر كما هو) ...
 app.listen(PORT, () => {
     console.log(`🚀 Server is listening on port ${PORT}`);
     dbClient.connect()
@@ -115,33 +93,36 @@ app.listen(PORT, () => {
                 );
             `);
             dbReady = true;
-            console.log("✅ Database is ready.");
-            setupScheduledTasks();
+            console.log("✅ Database is ready for TESTING MODE.");
         })
         .catch(error => {
             console.error('❌ CRITICAL: DB Connection/Setup Failed:', error);
         });
 });
 
-// ------------------- نقطة النهاية لاستقبال التقييمات -------------------
 app.post('/api/review', async (req, res) => {
     if (!dbReady) {
         return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     }
     try {
         const { roomNumber, reception, cleanliness, comfort, facilities, location, value, comments } = req.body;
-        
         const query = {
             text: 'INSERT INTO reviews("roomNumber", reception, cleanliness, comfort, facilities, location, value, comments) VALUES($1, $2, $3, $4, $5, $6, $7, $8)',
             values: [roomNumber, reception, cleanliness, comfort, facilities, location, value, comments],
         };
-        
         await dbClient.query(query);
-        res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك بنجاح.' });
+        newReviewsCounter++;
+        console.log(`Review received. Counter is now: ${newReviewsCounter}/${REVIEWS_THRESHOLD}`);
 
+        if (newReviewsCounter >= REVIEWS_THRESHOLD) {
+            console.log(`🚀 Threshold reached! Triggering all test reports.`);
+            runAllTestReports();
+            newReviewsCounter = 0;
+            console.log("Counter reset. Main thread responding to user.");
+        }
+        res.status(201).json({ success: true, message: 'شكرًا لك! تم استلام تقييمك بنجاح.' });
     } catch (error) {
         console.error('❌ ERROR in /api/review endpoint:', error);
         res.status(500).json({ success: false, message: 'خطأ فادح في السيرفر.' });
     }
 });
-// END OF FILE server.js
