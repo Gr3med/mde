@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (WITH DETAILED SUMMARY)
+// START OF FILE pdfGenerator.js (WITH DESCRIPTIVE TEXT FOR ALL AVERAGES)
 
 const puppeteer = require('puppeteer');
 
@@ -26,13 +26,15 @@ function getOverallRatingText(average) {
     if (score >= 3.5) return 'جيد جداً';
     if (score >= 2.5) return 'جيد';
     if (score >= 1.5) return 'مقبول';
-    return 'ضعيف';
+    if (score > 0) return 'ضعيف';
+    return '-';
 }
 function getOverallRatingColor(average) {
     const score = parseFloat(average);
     if (score >= 3.5) return '#28a745';
     if (score >= 2.5) return '#ffc107';
-    return '#dc3545';
+    if (score > 0) return '#dc3545';
+    return '#6c757d';
 }
 
 
@@ -50,7 +52,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; } .page { padding: 40px; } .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-color); padding-bottom: 20px; } .header-logo { font-size: 28px; font-weight: 700; color: var(--primary-color); } .header-info { text-align: left; } h1 { font-size: 24px; color: var(--primary-color); } p { color: #6c757d; } .section-title { font-size: 22px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; margin-top: 40px; margin-bottom: 20px; } .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; } .summary-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 15px; text-align: center; } h3 { margin: 0 0 10px 0; font-size: 15px; color: var(--primary-color); } .score { font-size: 32px; font-weight: 700; color: var(--secondary-color); } .overall-text { font-size: 24px; font-weight: bold; margin-bottom: 5px; } .overall-score-number { font-size: 18px; color: #6c757d; } .grid-span-2 { grid-column: span 2; } .review-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; } th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; vertical-align: middle;} thead { background-color: var(--primary-color); color: white; } tbody tr:nth-child(even) { background-color: #f8f9fa; } .rating-cell { font-weight: bold; } .comments-cell { text-align: right !important; } .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #999; }
+                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; } .page { padding: 40px; } .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-color); padding-bottom: 20px; } .header-logo { font-size: 28px; font-weight: 700; color: var(--primary-color); } .header-info { text-align: left; } h1 { font-size: 24px; color: var(--primary-color); } p { color: #6c757d; } .section-title { font-size: 22px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 10px; margin-top: 40px; margin-bottom: 20px; } .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; } .summary-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 12px; padding: 15px; text-align: center; } h3 { margin: 0 0 10px 0; font-size: 15px; color: var(--primary-color); } .desc-text { font-size: 22px; font-weight: bold; margin-bottom: 5px; } .score-number { font-size: 16px; color: #6c757d; } .grid-span-full { grid-column: 1 / -1; } .review-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; } th, td { border: 1px solid #dee2e6; padding: 12px; text-align: center; vertical-align: middle;} thead { background-color: var(--primary-color); color: white; } tbody tr:nth-child(even) { background-color: #f8f9fa; } .rating-cell { font-weight: bold; } .comments-cell { text-align: right !important; } .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #999; }
             </style>
         </head>
         <body>
@@ -59,18 +61,17 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 
                 <div class="section-title">ملخص الأداء العام</div>
                 <div class="summary-grid">
-                    <div class="summary-card"><h3>إجمالي التقييمات</h3><div class="score">${stats.total_reviews}</div></div>
-                    <div class="summary-card grid-span-2">
+                    <div class="summary-card grid-span-full">
                         <h3>المستوى العام</h3>
-                        <div class="overall-text" style="color: ${overallRatingColor};">${overallRatingText}</div>
-                        <div class="overall-score-number">(${overallAvg.toFixed(2)} / 5)</div>
+                        <div class="desc-text" style="color: ${overallRatingColor}; font-size: 28px;">${overallRatingText}</div>
+                        <div class="score-number">(${overallAvg.toFixed(2)} / 5) من ${stats.total_reviews} تقييم</div>
                     </div>
-                    <div class="summary-card"><h3>معدل الاستقبال</h3><div class="score">${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</div></div>
-                    <div class="summary-card"><h3>معدل النظافة</h3><div class="score">${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</div></div>
-                    <div class="summary-card"><h3>معدل الراحة</h3><div class="score">${(parseFloat(stats.avg_comfort) || 0).toFixed(2)}</div></div>
-                    <div class="summary-card"><h3>معدل المرافق</h3><div class="score">${(parseFloat(stats.avg_facilities) || 0).toFixed(2)}</div></div>
-                    <div class="summary-card"><h3>معدل الموقع</h3><div class="score">${(parseFloat(stats.avg_location) || 0).toFixed(2)}</div></div>
-                    <div class="summary-card"><h3>معدل القيمة</h3><div class="score">${(parseFloat(stats.avg_value) || 0).toFixed(2)}</div></div>
+                    <div class="summary-card"><h3>الاستقبال</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_reception)};">${getOverallRatingText(stats.avg_reception)}</div><div class="score-number">(${(parseFloat(stats.avg_reception) || 0).toFixed(2)})</div></div>
+                    <div class="summary-card"><h3>النظافة</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_cleanliness)};">${getOverallRatingText(stats.avg_cleanliness)}</div><div class="score-number">(${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)})</div></div>
+                    <div class="summary-card"><h3>الراحة</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_comfort)};">${getOverallRatingText(stats.avg_comfort)}</div><div class="score-number">(${(parseFloat(stats.avg_comfort) || 0).toFixed(2)})</div></div>
+                    <div class="summary-card"><h3>المرافق</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_facilities)};">${getOverallRatingText(stats.avg_facilities)}</div><div class="score-number">(${(parseFloat(stats.avg_facilities) || 0).toFixed(2)})</div></div>
+                    <div class="summary-card"><h3>الموقع</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_location)};">${getOverallRatingText(stats.avg_location)}</div><div class="score-number">(${(parseFloat(stats.avg_location) || 0).toFixed(2)})</div></div>
+                    <div class="summary-card"><h3>القيمة</h3><div class="desc-text" style="color: ${getOverallRatingColor(stats.avg_value)};">${getOverallRatingText(stats.avg_value)}</div><div class="score-number">(${(parseFloat(stats.avg_value) || 0).toFixed(2)})</div></div>
                 </div>
                 
                 <div class="section-title">تفاصيل آخر ${recentReviews.length} تقييمات</div>
@@ -92,13 +93,13 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 <p><strong>إجمالي التقييمات في الفترة:</strong> ${stats.total_reviews}</p>
                 <p><strong>المستوى العام للتقييم:</strong> <strong style="color: ${overallRatingColor}; font-size: 1.2em;">${overallRatingText}</strong> (${overallAvg.toFixed(2)} / 5)</p>
                 <p style="margin-top: 15px;"><strong>تفاصيل المعدلات:</strong></p>
-                <ul style="padding-right: 20px; margin: 0;">
-                    <li>الاستقبال: <strong>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</strong></li>
-                    <li>النظافة: <strong>${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</strong></li>
-                    <li>الراحة: <strong>${(parseFloat(stats.avg_comfort) || 0).toFixed(2)}</strong></li>
-                    <li>المرافق: <strong>${(parseFloat(stats.avg_facilities) || 0).toFixed(2)}</strong></li>
-                    <li>الموقع: <strong>${(parseFloat(stats.avg_location) || 0).toFixed(2)}</strong></li>
-                    <li>القيمة: <strong>${(parseFloat(stats.avg_value) || 0).toFixed(2)}</strong></li>
+                <ul style="padding-right: 20px; margin: 0; list-style-type: none;">
+                    <li>- الاستقبال: <strong style="color: ${getOverallRatingColor(stats.avg_reception)};">${getOverallRatingText(stats.avg_reception)}</strong> (${(parseFloat(stats.avg_reception) || 0).toFixed(2)})</li>
+                    <li>- النظافة: <strong style="color: ${getOverallRatingColor(stats.avg_cleanliness)};">${getOverallRatingText(stats.avg_cleanliness)}</strong> (${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)})</li>
+                    <li>- الراحة: <strong style="color: ${getOverallRatingColor(stats.avg_comfort)};">${getOverallRatingText(stats.avg_comfort)}</strong> (${(parseFloat(stats.avg_comfort) || 0).toFixed(2)})</li>
+                    <li>- المرافق: <strong style="color: ${getOverallRatingColor(stats.avg_facilities)};">${getOverallRatingText(stats.avg_facilities)}</strong> (${(parseFloat(stats.avg_facilities) || 0).toFixed(2)})</li>
+                    <li>- الموقع: <strong style="color: ${getOverallRatingColor(stats.avg_location)};">${getOverallRatingText(stats.avg_location)}</strong> (${(parseFloat(stats.avg_location) || 0).toFixed(2)})</li>
+                    <li>- القيمة: <strong style="color: ${getOverallRatingColor(stats.avg_value)};">${getOverallRatingText(stats.avg_value)}</strong> (${(parseFloat(stats.avg_value) || 0).toFixed(2)})</li>
                 </ul>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                 <h2 style="color: #003c71;">تفاصيل آخر التقييمات:</h2>
