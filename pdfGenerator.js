@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FINAL ROOMS & SUITES REPORT)
+// START OF FILE pdfGenerator.js (FIXED ROOM NUMBER BUG)
 
 const puppeteer = require('puppeteer');
 
@@ -34,7 +34,7 @@ async function createCumulativePdfReport(stats, recentReviews) {
         <body>
             <div class="page">
                 <div class="header">
-                    <img src="https://logowik.com/content/uploads/images/marriott-hotels-resorts-suites6228.jpg" alt="Marriott Aden Logo">
+                    <img src="./logo.jpg" alt="Marriott Aden Logo">
                     <h1>تقرير استبيان الغرف والأجنحة</h1>
                     <p>تاريخ الإصدار: ${today.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
@@ -53,20 +53,12 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 ${recentReviews.map(review => `
                 <table class="review-table">
                     <thead><tr>
-                        <th>النزيل</th><th>الطابق/الغرفة</th>
-                        ${review.mobileNumber ? `<th>رقم الجوال</th>` : ''}
-                        ${review.email ? `<th>البريد</th>` : ''}
-                        <th>التاريخ</th>
+                        <th colspan="3">النزيل: ${review.guestName || '-'}</th>
+                        <th colspan="3">الطابق: ${review.floor || '-'} / الغرفة: ${review.roomNumber || '-'}</th>
+                        ${review.mobileNumber ? `<th colspan="3">الجوال: ${review.mobileNumber}</th>` : ''}
+                        ${review.email ? `<th colspan="3">البريد: ${review.email}</th>` : ''}
+                        <th colspan="3">التاريخ: ${review.date}</th>
                     </tr></thead>
-                    <tbody><tr>
-                        <td>${review.guestName || '-'}</td>
-                        <td>${review.floor} / ${review.roomNumber}</td>
-                        ${review.mobileNumber ? `<td>${review.mobileNumber}</td>` : ''}
-                        ${review.email ? `<td>${review.email}</td>` : ''}
-                        <td>${review.date}</td>
-                    </tr></tbody>
-                </table>
-                <table class="review-table" style="margin-top: 0;">
                     <tbody>
                         <tr><td><strong>النظافة</strong></td><td><strong>الصيانة</strong></td><td><strong>الاستقبال</strong></td><td><strong>دورة المياه</strong></td><td><strong>المغسلة</strong></td><td><strong>الأمن</strong></td><td><strong>القاعات</strong></td><td><strong>المطعم</strong></td></tr>
                         <tr>
