@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FIXED ROOM NUMBER BUG)
+// START OF FILE pdfGenerator.js (FINAL DESIGN WITH LOCAL LOGO)
 
 const puppeteer = require('puppeteer');
 
@@ -18,7 +18,7 @@ function getRatingColor(rating) {
     return '#6c757d';
 }
 
-async function createCumulativePdfReport(stats, recentReviews) {
+async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
     const today = new Date();
 
     const htmlContent = `
@@ -28,13 +28,30 @@ async function createCumulativePdfReport(stats, recentReviews) {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } .page { padding: 30px; } .header { text-align: center; margin-bottom: 25px; } .header img { max-width: 180px; } h1 { color: var(--primary-color); font-size: 20px; } .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } .summary-table { width: 100%; border-collapse: collapse; } .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } .review-table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle;} thead { background-color: var(--primary-color); color: white; } tbody tr:nth-child(even) { background-color: #f8f9fa; } .rating-cell { font-weight: bold; } .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; min-width: 180px; }
+                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } 
+                body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } 
+                .page { padding: 30px; } 
+                .header { text-align: center; margin-bottom: 25px; } 
+                .header img { max-width: 180px; } 
+                h1 { color: var(--primary-color); font-size: 20px; } 
+                .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
+                .summary-table { width: 100%; border-collapse: collapse; } 
+                .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } 
+                .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
+                .review-table { width: 100%; border-collapse: collapse; margin-top: 5px; } 
+                th, td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle;} 
+                thead { background-color: var(--primary-color); color: white; } 
+                tbody tr:nth-child(even) { background-color: #f8f9fa; } 
+                .rating-cell { font-weight: bold; } 
+                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; min-width: 180px; }
+                .guest-info-table { width: 100%; margin-bottom: 15px; border: 1px solid #ccc; }
+                .guest-info-table th { background-color: #f2f2f2; padding: 8px; }
             </style>
         </head>
         <body>
             <div class="page">
                 <div class="header">
-                    <img src="./logo.jpg" alt="Marriott Aden Logo">
+                    <img src="${logoDataUri}" alt="Marriott Aden Logo">
                     <h1>تقرير استبيان الغرف والأجنحة</h1>
                     <p>تاريخ الإصدار: ${today.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
@@ -51,16 +68,24 @@ async function createCumulativePdfReport(stats, recentReviews) {
 
                 <div class="section-title">تفاصيل التقييمات الأخيرة</div>
                 ${recentReviews.map(review => `
-                <table class="review-table">
-                    <thead><tr>
-                        <th colspan="3">النزيل: ${review.guestName || '-'}</th>
-                        <th colspan="3">الطابق: ${review.floor || '-'} / الغرفة: ${review.roomNumber || '-'}</th>
-                        ${review.mobileNumber ? `<th colspan="3">الجوال: ${review.mobileNumber}</th>` : ''}
-                        ${review.email ? `<th colspan="3">البريد: ${review.email}</th>` : ''}
-                        <th colspan="3">التاريخ: ${review.date}</th>
-                    </tr></thead>
+                <table class="guest-info-table">
                     <tbody>
-                        <tr><td><strong>النظافة</strong></td><td><strong>الصيانة</strong></td><td><strong>الاستقبال</strong></td><td><strong>دورة المياه</strong></td><td><strong>المغسلة</strong></td><td><strong>الأمن</strong></td><td><strong>القاعات</strong></td><td><strong>المطعم</strong></td></tr>
+                        <tr>
+                            <th>النزيل</th><td>${review.guestName || '-'}</td>
+                            <th>الطابق</th><td>${review.floor || '-'}</td>
+                            <th>الغرفة</th><td>${review.roomNumber || '-'}</td>
+                        </tr>
+                        ${ (review.mobileNumber || review.email) ? `
+                        <tr>
+                            <th>الجوال</th><td>${review.mobileNumber || '-'}</td>
+                            <th>البريد</th><td colspan="3">${review.email || '-'}</td>
+                        </tr>
+                        ` : ''}
+                    </tbody>
+                </table>
+                <table class="review-table" style="margin-top: 0; margin-bottom: 20px;">
+                    <thead><tr><td>النظافة</td><td>الصيانة</td><td>الاستقبال</td><td>دورة المياه</td><td>المغسلة</td><td>الأمن</td><td>القاعات</td><td>المطعم</td></tr></thead>
+                    <tbody>
                         <tr>
                             <td class="rating-cell" style="color: ${getRatingColor(review.cleanliness)}">${getRatingText(review.cleanliness)}</td>
                             <td class="rating-cell" style="color: ${getRatingColor(review.maintenance)}">${getRatingText(review.maintenance)}</td>
@@ -74,7 +99,6 @@ async function createCumulativePdfReport(stats, recentReviews) {
                         ${review.comments ? `<tr><td colspan="8" class="comments-cell"><strong>مقترحات النزيل:</strong> ${review.comments}</td></tr>` : ''}
                     </tbody>
                 </table>
-                <hr style="border:none; border-top: 1px dashed #ccc; margin: 15px 0;">
                 `).join('')}
             </div>
         </body></html>
