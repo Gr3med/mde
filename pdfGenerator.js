@@ -1,7 +1,8 @@
-// START OF FILE pdfGenerator.js (FINAL FIX FOR GUEST INFO DISPLAY)
+// START OF FILE pdfGenerator.js (FINAL DESIGN WITH DESCRIPTIVE SUMMARY)
 
 const puppeteer = require('puppeteer');
 
+// --- Helper Functions (as before) ---
 function getRatingText(rating) {
     switch (parseInt(rating, 10)) {
         case 5: return 'ممتاز';
@@ -17,6 +18,24 @@ function getRatingColor(rating) {
     if (r === 1) return '#dc3545';
     return '#6c757d';
 }
+
+// دالة لتحويل المتوسط الرقمي إلى نص وصفي
+function getAverageRatingText(average) {
+    const score = parseFloat(average);
+    if (score >= 4) return 'ممتاز';
+    if (score >= 2) return 'جيد';
+    if (score > 0) return 'ضعيف';
+    return '-';
+}
+// دالة لتلوين نص المتوسط
+function getAverageRatingColor(average) {
+    const score = parseFloat(average);
+    if (score >= 4) return '#28a745';
+    if (score >= 2) return '#ffc107';
+    if (score > 0) return '#dc3545';
+    return '#6c757d';
+}
+
 
 async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
     const today = new Date();
@@ -38,6 +57,7 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 .summary-table { width: 100%; border-collapse: collapse; } 
                 .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } 
                 .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
+                .summary-table .rating-cell { font-weight: bold; font-size: 14px; }
                 .review-block { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
                 .guest-info-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; border: 1px solid #dee2e6; padding: 8px; }
@@ -59,10 +79,22 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 <div class="section-title">ملخص متوسط التقييمات (${stats.total_reviews} تقييم)</div>
                 <table class="summary-table">
                     <tbody>
-                        <tr><td>النظافة</td><td>${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</td><td>الصيانة</td><td>${(parseFloat(stats.avg_maintenance) || 0).toFixed(2)}</td></tr>
-                        <tr><td>الاستقبال</td><td>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</td><td>دورة المياه</td><td>${(parseFloat(stats.avg_bathroom) || 0).toFixed(2)}</td></tr>
-                        <tr><td>المغسلة</td><td>${(parseFloat(stats.avg_laundry) || 0).toFixed(2)}</td><td>الأمن</td><td>${(parseFloat(stats.avg_security) || 0).toFixed(2)}</td></tr>
-                        <tr><td>القاعات</td><td>${(parseFloat(stats.avg_halls) || 0).toFixed(2)}</td><td>المطعم</td><td>${(parseFloat(stats.avg_restaurant) || 0).toFixed(2)}</td></tr>
+                        <tr>
+                            <td>النظافة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_cleanliness)}">${getAverageRatingText(stats.avg_cleanliness)}</td>
+                            <td>الصيانة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_maintenance)}">${getAverageRatingText(stats.avg_maintenance)}</td>
+                        </tr>
+                        <tr>
+                            <td>الاستقبال</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_reception)}">${getAverageRatingText(stats.avg_reception)}</td>
+                            <td>دورة المياه</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_bathroom)}">${getAverageRatingText(stats.avg_bathroom)}</td>
+                        </tr>
+                        <tr>
+                            <td>المغسلة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_laundry)}">${getAverageRatingText(stats.avg_laundry)}</td>
+                            <td>الأمن</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_security)}">${getAverageRatingText(stats.avg_security)}</td>
+                        </tr>
+                        <tr>
+                            <td>القاعات</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_halls)}">${getAverageRatingText(stats.avg_halls)}</td>
+                            <td>المطعم</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_restaurant)}">${getAverageRatingText(stats.avg_restaurant)}</td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -70,26 +102,8 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 ${recentReviews.map(review => `
                 <div class="review-block">
                     <table class="guest-info-table">
-                        <thead>
-                            <tr>
-                                <th>النزيل</th>
-                                <th>الطابق</th>
-                                <th>الغرفة</th>
-                                <th>التاريخ</th>
-                                <th>الجوال</th>
-                                <th>البريد الإلكتروني</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>${review.guestName || '-'}</td>
-                                <td>${review.floor || '-'}</td>
-                                <td>${review.roomNumber || '-'}</td>
-                                <td>${review.date || '-'}</td>
-                                <td>${review.mobileNumber || '-'}</td>
-                                <td>${review.email || '-'}</td>
-                            </tr>
-                        </tbody>
+                        <thead><tr><th>النزيل</th><th>الطابق</th><th>الغرفة</th><th>التاريخ</th><th>الجوال</th><th>البريد الإلكتروني</th></tr></thead>
+                        <tbody><tr><td>${review.guestName || '-'}</td><td>${review.floor || '-'}</td><td>${review.roomNumber || '-'}</td><td>${review.date || '-'}</td><td>${review.mobileNumber || '-'}</td><td>${review.email || '-'}</td></tr></tbody>
                     </table>
                     <table class="review-table">
                         <thead><tr><td>النظافة</td><td>الصيانة</td><td>الاستقبال</td><td>دورة المياه</td><td>المغسلة</td><td>الأمن</td><td>القاعات</td><td>المطعم</td></tr></thead>
