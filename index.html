@@ -3,166 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>استمارة تقييم الخدمات | ماريوت</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <title>استمارة استبيان | فندق ماريوت عدن</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary-color: #003c71; --secondary-color: #d4a75c; }
-        body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-        .header { text-align: center; margin-bottom: 25px; }
-        .header img { max-width: 180px; margin-bottom: 10px; }
-        .header h1 { color: var(--primary-color); font-size: 22px; margin: 0; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; }
-        .form-group { margin-bottom: 10px; }
-        .form-group.full-width { grid-column: 1 / -1; }
-        label { font-weight: 700; display: block; margin-bottom: 8px; color: #333; font-size: 15px; }
-        input[type="text"], select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; font-family: 'Tajawal', sans-serif; transition: border-color 0.2s; }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary-color); outline: none; }
-        input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
-        textarea { resize: vertical; min-height: 80px; }
-        .submit-btn { width: 100%; background-color: var(--primary-color); color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: 700; margin-top: 15px; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { max-width: 180px; }
+        .header h1 { color: var(--primary-color); font-size: 24px; margin: 10px 0 5px; }
+        .header p { color: #555; font-size: 16px; margin: 0; }
+        .date-section { text-align: right; margin-bottom: 20px; padding-right: 10px; font-weight: bold; }
+        .intro-text { font-size: 16px; line-height: 1.6; margin-bottom: 25px; }
+        .rating-group { display: flex; align-items: center; justify-content: space-between; padding: 15px 10px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; }
+        .rating-group:last-of-type { border-bottom: none; }
+        .rating-group:hover { background-color: #f9f9f9; }
+        .rating-group label { font-size: 16px; font-weight: 500; flex-basis: 50%; }
+        .rating-options { display: flex; justify-content: space-around; flex-basis: 50%; }
+        .rating-options div { display: flex; align-items: center; }
+        .rating-options input[type="radio"] { margin-left: 8px; transform: scale(1.2); cursor: pointer; }
+        .form-group { margin-top: 20px; }
+        .form-group label { font-weight: 700; display: block; margin-bottom: 8px; }
+        .form-group label span.optional { font-weight: 400; color: #888; font-size: 14px; }
+        input[type="text"], input[type="tel"], input[type="email"], select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; font-family: 'Tajawal', sans-serif; }
+        .phone-group { display: flex; gap: 10px; }
+        .phone-group select { flex: 0 0 140px; }
+        .phone-group input { flex: 1 1 auto; }
+        textarea { resize: vertical; min-height: 90px; }
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 25px; }
+        .submit-btn { width: 100%; grid-column: 1 / -1; background-color: var(--primary-color); color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: 700; margin-top: 15px; }
         .submit-btn:disabled { background-color: #a0a0a0; }
-        .message-area { text-align: center; font-weight: bold; padding: 10px; border-radius: 5px; margin-top: 20px; display: none; }
+        .message-area { text-align: center; font-weight: bold; padding: 12px; border-radius: 8px; margin-top: 20px; display: none; }
         .message-area.success { background-color: #e9f7ef; color: #28a745; }
         .message-area.error { background-color: #f8d7da; color: #dc3545; }
-        @media (max-width: 600px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .container { padding: 15px; }
-            .header h1 { font-size: 20px; }
-        }
     </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-        <img src="./ma.jpg" alt="Marriott Logo">
-        <h1>استمارة تقييم الخدمات</h1>
+        <img src="./logo.jpg" alt="Marriott Aden Logo">
+        <h1>مرحباً بكم في غرف وأجنحة فندق ماريوت عدن</h1>
+        <p>استمارة إستبيان</p>
+    </div>
+    
+    <div class="date-section">
+        <label for="date">التاريخ: </label>
+        <span id="date-display"></span>
     </div>
 
     <form id="evaluationForm">
-      <div class="form-grid">
-        <div class="form-group">
-            <label for="eventDate">التاريخ</label>
-            <input type="text" id="eventDate" name="eventDate" readonly>
-        </div>
-        <div class="form-group">
-            <label for="coordinatorName">اسم النزيل/المنسق</label>
-            <input type="text" id="coordinatorName" name="coordinatorName" required>
-        </div>
-        
-        <!-- الطوابق والغرف -->
-        <div class="form-group">
-            <label for="floor">اختر الطابق</label>
-            <select id="floor" name="floor" required>
-                <option value="" disabled selected>-- حدد الطابق --</option>
-                <option value="1">الطابق الأول</option>
-                <option value="2">الطابق الثاني</option>
-                <option value="3">الطابق الثالث</option>
-                <option value="4">الطابق الرابع</option>
-                <option value="5">الطابق الخامس</option>
-                <option value="6">الطابق السادس</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="roomNumber">اختر الغرفة</label>
-            <select id="roomNumber" name="roomNumber" required disabled>
-                <option value="" disabled selected>-- حدد الطابق أولاً --</option>
-            </select>
-        </div>
-      </div>
-      
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <input type="hidden" id="date" name="date">
+      <p class="intro-text">
+        نرجو التكرم بإبداء آرائكم حول الخدمة المقدمة لكم من قبلنا وذلك حتى يتسنى لنا تقديم أفضل خدمة لكم...
+        <br>
+        للاستفادة من آرائكم نرجو التكرم بوضع إشارة أمام التقدير المناسب.
+      </p>
 
-      <div class="form-grid">
-        <div class="form-group"><label>نظافة الغرفة/القاعة</label><select name="cleanliness" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group"><label>الإضاءة</label><select name="lighting" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group"><label>التكييف والتبريد</label><select name="acCooling" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group"><label>خدمة الغرف</label><select name="roomService" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group"><label>جودة الطعام</label><select name="foodQuality" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group"><label>خدمة الانترنت</label><select name="internetService" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-        <div class="form-group full-width"><label>التجربة بشكل عام</label><select name="overallExperience" required><option value=5>ممتاز</option><option value=3>جيد</option><option value=1>ضعيف</option></select></div>
-      </div>
-      
-      <div class="form-group full-width">
-        <label for="comments">ملاحظات أو اقتراحات</label>
+      <!-- Rating Sections -->
+      <div class="rating-group"><label>1. مستوى النظافة في الغرف والممرات</label><div class="rating-options"><div><input type="radio" name="cleanliness" value="5" required> ممتاز</div><div><input type="radio" name="cleanliness" value="3"> جيد</div><div><input type="radio" name="cleanliness" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>2. مستوى الصيانة والأجهزة الإلكترونية</label><div class="rating-options"><div><input type="radio" name="maintenance" value="5" required> ممتاز</div><div><input type="radio" name="maintenance" value="3"> جيد</div><div><input type="radio" name="maintenance" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>3. مستوى خدمة قسم الاستقبال</label><div class="rating-options"><div><input type="radio" name="reception" value="5" required> ممتاز</div><div><input type="radio" name="reception" value="3"> جيد</div><div><input type="radio" name="reception" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>4. مستوى جاهزية دورة المياه</label><div class="rating-options"><div><input type="radio" name="bathroom" value="5" required> ممتاز</div><div><input type="radio" name="bathroom" value="3"> جيد</div><div><input type="radio" name="bathroom" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>5. مستوى خدمة المغسلة</label><div class="rating-options"><div><input type="radio" name="laundry" value="5" required> ممتاز</div><div><input type="radio" name="laundry" value="3"> جيد</div><div><input type="radio" name="laundry" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>6. مستوى خدمة الحراسة الأمنية</label><div class="rating-options"><div><input type="radio" name="security" value="5" required> ممتاز</div><div><input type="radio" name="security" value="3"> جيد</div><div><input type="radio" name="security" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>7. مستوى خدمات صالة المؤتمرات</label><div class="rating-options"><div><input type="radio" name="halls" value="5" required> ممتاز</div><div><input type="radio" name="halls" value="3"> جيد</div><div><input type="radio" name="halls" value="1"> ضعيف</div></div></div>
+      <div class="rating-group"><label>8. مستوى الخدمة في المطعم</label><div class="rating-options"><div><input type="radio" name="restaurant" value="5" required> ممتاز</div><div><input type="radio" name="restaurant" value="3"> جيد</div><div><input type="radio" name="restaurant" value="1"> ضعيف</div></div></div>
+
+      <div class="form-group">
+        <label for="comments">ما هي أفكاركم ومقترحاتكم لتطوير الخدمة بالفندق... <span class="optional">(اختياري)</span></label>
         <textarea id="comments" name="comments" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+      </div>
+
+      <div class="footer-grid">
+         <div class="form-group">
+            <label for="floor">الطابق <span style="color:red;">*</span></label>
+            <select id="floor" name="floor" required>
+                <option value="" disabled selected>-- اختر --</option>
+                <option value="1">الأول</option>
+                <option value="2">الثاني</option>
+                <option value="3">الثالث</option>
+                <option value="4">الرابع</option>
+                <option value="5">الخامس</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="roomNumber">رقم الغرفة <span style="color:red;">*</span></label>
+            <select id="roomNumber" name="roomNumber" required disabled>
+                <option value="" disabled selected>-- اختر الطابق أولاً --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="guestName">اسم النزيل <span class="optional">(اختياري)</span></label>
+            <input type="text" id="guestName" name="guestName">
+        </div>
+        <div class="form-group">
+            <label for="email">البريد الإلكتروني <span class="optional">(اختياري)</span></label>
+            <input type="email" id="email" name="email">
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="mobileNumber">رقم الجوال <span class="optional">(اختياري)</span></label>
+            <div class="phone-group">
+                <select id="countryCode" name="countryCode">
+                    <option value="+967">اليمن (+967)</option>
+                    <option value="+966">السعودية (+966)</option>
+                    <option value="+971">الإمارات (+971)</option>
+                    <option value="+968">عمان (+968)</option>
+                    <option value="+20">مصر (+20)</option>
+                </select>
+                <input type="tel" id="mobileNumber" name="mobileNumber" placeholder="771xxxxxx">
+            </div>
+        </div>
       </div>
       
       <div id="message-area" class="message-area"></div>
-      <button type="submit" id="submit-btn" class="submit-btn">إرسال التقييم</button>
+      <button type="submit" id="submit-btn" class="submit-btn">إرسال الاستبيان</button>
     </form>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const eventDateField = document.getElementById('eventDate');
+        const dateDisplay = document.getElementById('date-display');
+        const dateInput = document.getElementById('date');
         const floorSelect = document.getElementById('floor');
         const roomSelect = document.getElementById('roomNumber');
         
-        // تعيين تاريخ اليوم
         const today = new Date();
         const formattedDate = today.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
-        eventDateField.value = formattedDate;
+        dateDisplay.textContent = formattedDate;
+        dateInput.value = formattedDate;
 
-        // منطق تحديث قائمة الغرف
         floorSelect.addEventListener('change', function() {
             const floor = parseInt(this.value, 10);
-            roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الغرفة --</option>'; // إعادة تعيين
+            roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الغرفة --</option>';
             
             if (floor) {
                 roomSelect.disabled = false;
                 for (let i = 1; i <= 20; i++) {
                     const roomNumber = floor * 100 + i;
-                    const option = document.createElement('option');
-                    option.value = roomNumber;
-                    option.textContent = `غرفة ${roomNumber}`;
-                    roomSelect.appendChild(option);
+                    const option = new Option(`غرفة ${roomNumber}`, roomNumber);
+                    roomSelect.add(option);
                 }
             } else {
                 roomSelect.disabled = true;
             }
         });
 
-        // منطق إرسال النموذج
-        const API_URL = `${window.location.origin}/api/review`;
         const form = document.getElementById('evaluationForm');
-        const submitBtn = document.getElementById('submit-btn');
-        const messageArea = document.getElementById('message-area');
-
-        form.addEventListener('submit', async function(event) {
+        form.addEventListener('submit', function(event) {
             event.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'جاري الإرسال...';
-            messageArea.style.display = 'none';
 
-            try {
-                const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'خطأ غير متوقع.');
-                
-                messageArea.textContent = result.message;
-                messageArea.className = 'message-area success';
-                form.reset();
-                eventDateField.value = formattedDate;
-                roomSelect.innerHTML = '<option value="" disabled selected>-- حدد الطابق أولاً --</option>';
-                roomSelect.disabled = true;
-
-            } catch (error) {
-                messageArea.textContent = error.message;
-                messageArea.className = 'message-area error';
-            } finally {
-                messageArea.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'إرسال التقييم';
+            // تحقق من صحة الحقول الإجبارية قبل الإرسال
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
             }
+
+            const messageArea = document.getElementById('message-area');
+            messageArea.textContent = 'شكرًا لك! تم استلام تقييمك بنجاح.';
+            messageArea.className = 'message-area success';
+            messageArea.style.display = 'block';
+            form.reset();
+            dateDisplay.textContent = formattedDate;
+            dateInput.value = formattedDate;
+            roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الطابق أولاً --</option>';
+            roomSelect.disabled = true;
         });
     });
   </script>

@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (WITH FLOOR/ROOM IN REPORT)
+// START OF FILE pdfGenerator.js (FINAL ROOMS & SUITES REPORT)
 
 const puppeteer = require('puppeteer');
 
@@ -28,28 +28,24 @@ async function createCumulativePdfReport(stats, recentReviews) {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } .page { padding: 30px; } .header { text-align: center; margin-bottom: 25px; } .header img { max-width: 180px; } h1 { color: var(--primary-color); font-size: 20px; } .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } .review-table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle;} thead { background-color: var(--primary-color); color: white; } tbody tr:nth-child(even) { background-color: #f8f9fa; } .rating-cell { font-weight: bold; } .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; min-width: 180px; }
+                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } .page { padding: 30px; } .header { text-align: center; margin-bottom: 25px; } .header img { max-width: 180px; } h1 { color: var(--primary-color); font-size: 20px; } .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } .summary-table { width: 100%; border-collapse: collapse; } .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } .review-table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle;} thead { background-color: var(--primary-color); color: white; } tbody tr:nth-child(even) { background-color: #f8f9fa; } .rating-cell { font-weight: bold; } .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; min-width: 180px; }
             </style>
         </head>
         <body>
             <div class="page">
                 <div class="header">
-                    <img src="https://logowik.com/content/uploads/images/marriott-hotels-resorts-suites6228.jpg" alt="Marriott Logo">
-                    <h1>تقرير تقييم الخدمات</h1>
+                    <img src="https://logowik.com/content/uploads/images/marriott-hotels-resorts-suites6228.jpg" alt="Marriott Aden Logo">
+                    <h1>تقرير استبيان الغرف والأجنحة</h1>
                     <p>تاريخ الإصدار: ${today.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
                 
                 <div class="section-title">ملخص متوسط التقييمات (${stats.total_reviews} تقييم)</div>
-                <table class="review-table">
-                    <thead><tr><th>الفئة</th><th>المتوسط</th></tr></thead>
+                <table class="summary-table">
                     <tbody>
-                        <tr><td>النظافة</td><td class="rating-cell">${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</td></tr>
-                        <tr><td>الإضاءة</td><td class="rating-cell">${(parseFloat(stats.avg_lighting) || 0).toFixed(2)}</td></tr>
-                        <tr><td>التكييف</td><td class="rating-cell">${(parseFloat(stats.avg_accooling) || 0).toFixed(2)}</td></tr>
-                        <tr><td>خدمة الغرف</td><td class="rating-cell">${(parseFloat(stats.avg_roomservice) || 0).toFixed(2)}</td></tr>
-                        <tr><td>جودة الطعام</td><td class="rating-cell">${(parseFloat(stats.avg_foodquality) || 0).toFixed(2)}</td></tr>
-                        <tr><td>خدمة الانترنت</td><td class="rating-cell">${(parseFloat(stats.avg_internetservice) || 0).toFixed(2)}</td></tr>
-                        <tr><td>التجربة العامة</td><td class="rating-cell">${(parseFloat(stats.avg_overallexperience) || 0).toFixed(2)}</td></tr>
+                        <tr><td>النظافة</td><td>${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</td><td>الصيانة</td><td>${(parseFloat(stats.avg_maintenance) || 0).toFixed(2)}</td></tr>
+                        <tr><td>الاستقبال</td><td>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</td><td>جاهزية دورة المياه</td><td>${(parseFloat(stats.avg_bathroom) || 0).toFixed(2)}</td></tr>
+                        <tr><td>المغسلة</td><td>${(parseFloat(stats.avg_laundry) || 0).toFixed(2)}</td><td>الأمن</td><td>${(parseFloat(stats.avg_security) || 0).toFixed(2)}</td></tr>
+                        <tr><td>صالة المؤتمرات</td><td>${(parseFloat(stats.avg_halls) || 0).toFixed(2)}</td><td>المطعم</td><td>${(parseFloat(stats.avg_restaurant) || 0).toFixed(2)}</td></tr>
                     </tbody>
                 </table>
 
@@ -57,30 +53,42 @@ async function createCumulativePdfReport(stats, recentReviews) {
                 ${recentReviews.map(review => `
                 <table class="review-table">
                     <thead><tr>
-                        <th colspan="4">النزيل: ${review.coordinatorName || '-'}</th>
-                        <th colspan="4">الطابق: ${review.floor || '-'} / الغرفة: ${review.roomNumber || '-'}</th>
-                        <th colspan="3">التاريخ: ${review.eventDate}</th>
+                        <th>النزيل</th><th>الطابق/الغرفة</th>
+                        ${review.mobileNumber ? `<th>رقم الجوال</th>` : ''}
+                        ${review.email ? `<th>البريد</th>` : ''}
+                        <th>التاريخ</th>
                     </tr></thead>
+                    <tbody><tr>
+                        <td>${review.guestName || '-'}</td>
+                        <td>${review.floor} / ${review.roomNumber}</td>
+                        ${review.mobileNumber ? `<td>${review.mobileNumber}</td>` : ''}
+                        ${review.email ? `<td>${review.email}</td>` : ''}
+                        <td>${review.date}</td>
+                    </tr></tbody>
+                </table>
+                <table class="review-table" style="margin-top: 0;">
                     <tbody>
-                        <tr><td><strong>النظافة</strong></td><td><strong>الإضاءة</strong></td><td><strong>التكييف</strong></td><td><strong>خدمة الغرف</strong></td><td><strong>جودة الطعام</strong></td><td><strong>الانترنت</strong></td><td><strong>التجربة</strong></td></tr>
+                        <tr><td><strong>النظافة</strong></td><td><strong>الصيانة</strong></td><td><strong>الاستقبال</strong></td><td><strong>دورة المياه</strong></td><td><strong>المغسلة</strong></td><td><strong>الأمن</strong></td><td><strong>القاعات</strong></td><td><strong>المطعم</strong></td></tr>
                         <tr>
                             <td class="rating-cell" style="color: ${getRatingColor(review.cleanliness)}">${getRatingText(review.cleanliness)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.lighting)}">${getRatingText(review.lighting)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.acCooling)}">${getRatingText(review.acCooling)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.roomService)}">${getRatingText(review.roomService)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.foodQuality)}">${getRatingText(review.foodQuality)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.internetService)}">${getRatingText(review.internetService)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.overallExperience)}">${getRatingText(review.overallExperience)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.maintenance)}">${getRatingText(review.maintenance)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.reception)}">${getRatingText(review.reception)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.bathroom)}">${getRatingText(review.bathroom)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.laundry)}">${getRatingText(review.laundry)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.security)}">${getRatingText(review.security)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.halls)}">${getRatingText(review.halls)}</td>
+                            <td class="rating-cell" style="color: ${getRatingColor(review.restaurant)}">${getRatingText(review.restaurant)}</td>
                         </tr>
-                        ${review.comments ? `<tr><td colspan="7" class="comments-cell"><strong>ملاحظات:</strong> ${review.comments}</td></tr>` : ''}
+                        ${review.comments ? `<tr><td colspan="8" class="comments-cell"><strong>مقترحات النزيل:</strong> ${review.comments}</td></tr>` : ''}
                     </tbody>
                 </table>
+                <hr style="border:none; border-top: 1px dashed #ccc; margin: 15px 0;">
                 `).join('')}
             </div>
         </body></html>
     `;
 
-    const emailHtmlContent = `<div dir="rtl" style="text-align: center; padding: 20px;"><h1>تقرير جديد لتقييم الخدمات</h1><p>التقرير المفصل مرفق.</p></div>`;
+    const emailHtmlContent = `<div dir="rtl" style="text-align: center; padding: 20px;"><h1>تقرير جديد لاستبيان الغرف والأجنحة</h1><p>التقرير المفصل مرفق.</p></div>`;
 
     let browser = null;
     try {
