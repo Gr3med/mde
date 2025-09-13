@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FINAL DESIGN WITH LOCAL LOGO)
+// START OF FILE pdfGenerator.js (FIXED GUEST INFO DISPLAY BUG)
 
 const puppeteer = require('puppeteer');
 
@@ -38,14 +38,14 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 .summary-table { width: 100%; border-collapse: collapse; } 
                 .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } 
                 .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
-                .review-table { width: 100%; border-collapse: collapse; margin-top: 5px; } 
-                th, td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle;} 
-                thead { background-color: var(--primary-color); color: white; } 
-                tbody tr:nth-child(even) { background-color: #f8f9fa; } 
+                .review-block { margin-bottom: 20px; }
+                .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
+                .guest-info-table th, .guest-info-table td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+                .guest-info-table th { background-color: #f2f2f2; font-weight: bold; }
+                .review-table th, .review-table td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle; } 
+                .review-table thead { background-color: var(--primary-color); color: white; } 
                 .rating-cell { font-weight: bold; } 
-                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; min-width: 180px; }
-                .guest-info-table { width: 100%; margin-bottom: 15px; border: 1px solid #ccc; }
-                .guest-info-table th { background-color: #f2f2f2; padding: 8px; }
+                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; }
             </style>
         </head>
         <body>
@@ -60,45 +60,47 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 <table class="summary-table">
                     <tbody>
                         <tr><td>النظافة</td><td>${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</td><td>الصيانة</td><td>${(parseFloat(stats.avg_maintenance) || 0).toFixed(2)}</td></tr>
-                        <tr><td>الاستقبال</td><td>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</td><td>جاهزية دورة المياه</td><td>${(parseFloat(stats.avg_bathroom) || 0).toFixed(2)}</td></tr>
+                        <tr><td>الاستقبال</td><td>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</td><td>دورة المياه</td><td>${(parseFloat(stats.avg_bathroom) || 0).toFixed(2)}</td></tr>
                         <tr><td>المغسلة</td><td>${(parseFloat(stats.avg_laundry) || 0).toFixed(2)}</td><td>الأمن</td><td>${(parseFloat(stats.avg_security) || 0).toFixed(2)}</td></tr>
-                        <tr><td>صالة المؤتمرات</td><td>${(parseFloat(stats.avg_halls) || 0).toFixed(2)}</td><td>المطعم</td><td>${(parseFloat(stats.avg_restaurant) || 0).toFixed(2)}</td></tr>
+                        <tr><td>القاعات</td><td>${(parseFloat(stats.avg_halls) || 0).toFixed(2)}</td><td>المطعم</td><td>${(parseFloat(stats.avg_restaurant) || 0).toFixed(2)}</td></tr>
                     </tbody>
                 </table>
 
                 <div class="section-title">تفاصيل التقييمات الأخيرة</div>
                 ${recentReviews.map(review => `
-                <table class="guest-info-table">
-                    <tbody>
-                        <tr>
-                            <th>النزيل</th><td>${review.guestName || '-'}</td>
-                            <th>الطابق</th><td>${review.floor || '-'}</td>
-                            <th>الغرفة</th><td>${review.roomNumber || '-'}</td>
-                        </tr>
-                        ${ (review.mobileNumber || review.email) ? `
-                        <tr>
-                            <th>الجوال</th><td>${review.mobileNumber || '-'}</td>
-                            <th>البريد</th><td colspan="3">${review.email || '-'}</td>
-                        </tr>
-                        ` : ''}
-                    </tbody>
-                </table>
-                <table class="review-table" style="margin-top: 0; margin-bottom: 20px;">
-                    <thead><tr><td>النظافة</td><td>الصيانة</td><td>الاستقبال</td><td>دورة المياه</td><td>المغسلة</td><td>الأمن</td><td>القاعات</td><td>المطعم</td></tr></thead>
-                    <tbody>
-                        <tr>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.cleanliness)}">${getRatingText(review.cleanliness)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.maintenance)}">${getRatingText(review.maintenance)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.reception)}">${getRatingText(review.reception)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.bathroom)}">${getRatingText(review.bathroom)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.laundry)}">${getRatingText(review.laundry)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.security)}">${getRatingText(review.security)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.halls)}">${getRatingText(review.halls)}</td>
-                            <td class="rating-cell" style="color: ${getRatingColor(review.restaurant)}">${getRatingText(review.restaurant)}</td>
-                        </tr>
-                        ${review.comments ? `<tr><td colspan="8" class="comments-cell"><strong>مقترحات النزيل:</strong> ${review.comments}</td></tr>` : ''}
-                    </tbody>
-                </table>
+                <div class="review-block">
+                    <table class="guest-info-table">
+                        <tbody>
+                            <tr>
+                                <th>النزيل</th><td>${review.guestName || '-'}</td>
+                                <th>الطابق</th><td>${review.floor || '-'}</td>
+                                <th>الغرفة</th><td>${review.roomNumber || '-'}</td>
+                                <th>التاريخ</th><td>${review.date || '-'}</td>
+                            </tr>
+                            ${(review.mobileNumber || review.email) ? `
+                            <tr>
+                                <th>الجوال</th><td>${review.mobileNumber || '-'}</td>
+                                <th>البريد الإلكتروني</th><td colspan="3">${review.email || '-'}</td>
+                            </tr>` : ''}
+                        </tbody>
+                    </table>
+                    <table class="review-table">
+                        <thead><tr><td>النظافة</td><td>الصيانة</td><td>الاستقبال</td><td>دورة المياه</td><td>المغسلة</td><td>الأمن</td><td>القاعات</td><td>المطعم</td></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.cleanliness)}">${getRatingText(review.cleanliness)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.maintenance)}">${getRatingText(review.maintenance)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.reception)}">${getRatingText(review.reception)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.bathroom)}">${getRatingText(review.bathroom)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.laundry)}">${getRatingText(review.laundry)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.security)}">${getRatingText(review.security)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.halls)}">${getRatingText(review.halls)}</td>
+                                <td class="rating-cell" style="color: ${getRatingColor(review.restaurant)}">${getRatingText(review.restaurant)}</td>
+                            </tr>
+                            ${review.comments ? `<tr><td colspan="8" class="comments-cell"><strong>مقترحات النزيل:</strong> ${review.comments}</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
                 `).join('')}
             </div>
         </body></html>
