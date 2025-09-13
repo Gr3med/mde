@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FIXED GUEST INFO DISPLAY BUG)
+// START OF FILE pdfGenerator.js (FINAL DESIGN MATCHING THE SCREENSHOT)
 
 const puppeteer = require('puppeteer');
 
@@ -38,10 +38,10 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 .summary-table { width: 100%; border-collapse: collapse; } 
                 .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } 
                 .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
-                .review-block { margin-bottom: 20px; }
+                .review-block { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
-                .guest-info-table th, .guest-info-table td { border: 1px solid #ccc; padding: 8px; text-align: right; }
-                .guest-info-table th { background-color: #f2f2f2; font-weight: bold; }
+                .guest-info-table th, .guest-info-table td { border: 1px solid #dee2e6; padding: 8px; text-align: right; }
+                .guest-info-table thead th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
                 .review-table th, .review-table td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle; } 
                 .review-table thead { background-color: var(--primary-color); color: white; } 
                 .rating-cell { font-weight: bold; } 
@@ -70,18 +70,25 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 ${recentReviews.map(review => `
                 <div class="review-block">
                     <table class="guest-info-table">
+                        <thead>
+                            <tr>
+                                <th>النزيل</th>
+                                <th>الطابق</th>
+                                <th>الغرفة</th>
+                                <th>التاريخ</th>
+                                <th>الجوال</th>
+                                <th>البريد الإلكتروني</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <tr>
-                                <th>النزيل</th><td>${review.guestName || '-'}</td>
-                                <th>الطابق</th><td>${review.floor || '-'}</td>
-                                <th>الغرفة</th><td>${review.roomNumber || '-'}</td>
-                                <th>التاريخ</th><td>${review.date || '-'}</td>
+                                <td>${review.guestName || '-'}</td>
+                                <td>${review.floor || '-'}</td>
+                                <td>${review.roomNumber || '-'}</td>
+                                <td>${review.date || '-'}</td>
+                                <td>${review.mobileNumber || '-'}</td>
+                                <td>${review.email || '-'}</td>
                             </tr>
-                            ${(review.mobileNumber || review.email) ? `
-                            <tr>
-                                <th>الجوال</th><td>${review.mobileNumber || '-'}</td>
-                                <th>البريد الإلكتروني</th><td colspan="3">${review.email || '-'}</td>
-                            </tr>` : ''}
                         </tbody>
                     </table>
                     <table class="review-table">
