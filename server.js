@@ -1,8 +1,10 @@
-// START OF FILE server.js (FINAL ROOMS & SUITES SCHEMA - TESTING VERSION)
+// START OF FILE server.js (WITH LOCAL LOGO SUPPORT)
 
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
+const fs = require('fs'); // <--- إضافة مهمة لقراءة الملفات
+const path = require('path'); // <--- إضافة مهمة للتعامل مع المسارات
 require('dotenv').config();
 
 const { sendReportEmail } = require('./notifications.js');
@@ -22,34 +24,23 @@ const dbClient = new Client({
 
 let dbReady = false;
 let newReviewsCounter = 0;
-const REVIEWS_THRESHOLD = 3; // إرسال التقرير بعد 3 تقييمات للتجربة
+const REVIEWS_THRESHOLD = 3;
 
+// ... (دالة setupDatabase كما هي بدون تغيير)
 async function setupDatabase() {
     console.log('Setting up new database schema for Rooms & Suites...');
     await dbClient.query('DROP TABLE IF EXISTS reviews;');
     await dbClient.query(`
         CREATE TABLE reviews (
-            id SERIAL PRIMARY KEY,
-            date VARCHAR(50),
-            guestName TEXT,
-            floor INTEGER,
-            roomNumber INTEGER,
-            email TEXT,
-            mobileNumber VARCHAR(50),
-            cleanliness INTEGER,
-            maintenance INTEGER,
-            reception INTEGER,
-            bathroom INTEGER,
-            laundry INTEGER,
-            security INTEGER,
-            halls INTEGER,
-            restaurant INTEGER,
-            comments TEXT,
-            "createdAt" TIMESTAMPTZ DEFAULT NOW()
+            id SERIAL PRIMARY KEY, date VARCHAR(50), guestName TEXT, floor INTEGER, roomNumber INTEGER,
+            email TEXT, mobileNumber VARCHAR(50), cleanliness INTEGER, maintenance INTEGER, reception INTEGER,
+            bathroom INTEGER, laundry INTEGER, security INTEGER, halls INTEGER, restaurant INTEGER,
+            comments TEXT, "createdAt" TIMESTAMPTZ DEFAULT NOW()
         );
     `);
     console.log('✅ New Rooms & Suites schema created successfully.');
 }
+
 
 app.listen(PORT, () => {
     console.log(`🚀 Server is listening on port ${PORT}`);
@@ -70,13 +61,10 @@ async function runAllTestReports() {
     try {
         const statsQuery = `
             SELECT 
-                COUNT(id) as total_reviews,
-                AVG(cleanliness) as avg_cleanliness, AVG(maintenance) as avg_maintenance,
-                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom,
-                AVG(laundry) as avg_laundry, AVG(security) as avg_security,
-                AVG(halls) as avg_halls, AVG(restaurant) as avg_restaurant
-            FROM reviews
-            WHERE id IN (SELECT id FROM reviews ORDER BY id DESC LIMIT 5)
+                COUNT(id) as total_reviews, AVG(cleanliness) as avg_cleanliness, AVG(maintenance) as avg_maintenance,
+                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom, AVG(laundry) as avg_laundry,
+                AVG(security) as avg_security, AVG(halls) as avg_halls, AVG(restaurant) as avg_restaurant
+            FROM reviews WHERE id IN (SELECT id FROM reviews ORDER BY id DESC LIMIT 5)
         `;
         const recentReviewsQuery = `SELECT * FROM reviews ORDER BY id DESC LIMIT 5`;
         
@@ -87,8 +75,13 @@ async function runAllTestReports() {
         const recentReviews = recentRes.rows;
 
         if (!stats || stats.total_reviews == 0) return;
+        
+        // --- تعديل لدعم الشعار المحلي ---
+        const logoPath = path.join(__dirname, 'logo.jpg');
+        const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+        const logoDataUri = `data:image/jpeg;base64,${logoBase64}`;
 
-        const { pdfBuffer, emailHtmlContent } = await createCumulativePdfReport(stats, recentReviews);
+        const { pdfBuffer, emailHtmlContent } = await createCumulativePdfReport(stats, recentReviews, logoDataUri);
         
         const attachments = [{
             filename: `Rooms-Suites-Report-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -105,6 +98,7 @@ async function runAllTestReports() {
     }
 }
 
+// ... (دالة app.post('/api/review') كما هي بدون تغيير) ...
 app.post('/api/review', async (req, res) => {
     if (!dbReady) return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     
@@ -115,19 +109,16 @@ app.post('/api/review', async (req, res) => {
             security, halls, restaurant, comments, countryCode
         } = req.body;
 
-        // دمج مفتاح الدولة مع الرقم فقط إذا كان الرقم موجوداً
         let fullMobileNumber = mobileNumber ? `${countryCode || ''}${mobileNumber}` : null;
         
         const query = {
             text: `INSERT INTO reviews(
-                date, guestName, floor, roomNumber, email, mobileNumber,
-                cleanliness, maintenance, reception, bathroom, laundry,
-                security, halls, restaurant, comments
+                date, guestName, floor, roomNumber, email, mobileNumber, cleanliness, maintenance, 
+                reception, bathroom, laundry, security, halls, restaurant, comments
             ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
             values: [
-                date, guestName, floor, roomNumber, email, fullMobileNumber,
-                cleanliness, maintenance, reception, bathroom, laundry,
-                security, halls, restaurant, comments
+                date, guestName, floor, roomNumber, email, fullMobileNumber, cleanliness, maintenance, 
+                reception, bathroom, laundry, security, halls, restaurant, comments
             ],
         };
         
