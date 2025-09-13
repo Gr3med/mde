@@ -1,4 +1,4 @@
-// START OF FILE server.js (FINAL FIX FOR DATA MISMATCH)
+// START OF FILE server.js (FINAL FIX FOR "COLUMN DOES NOT EXIST" ERROR)
 
 const express = require('express');
 const cors = require('cors');
@@ -26,6 +26,7 @@ let dbReady = false;
 let newReviewsCounter = 0;
 const REVIEWS_THRESHOLD = 3;
 
+// --- دالة إنشاء قاعدة البيانات (النسخة المصححة) ---
 async function setupDatabase() {
     console.log('Setting up new database schema for Rooms & Suites...');
     await dbClient.query('DROP TABLE IF EXISTS reviews;');
@@ -33,11 +34,11 @@ async function setupDatabase() {
         CREATE TABLE reviews (
             id SERIAL PRIMARY KEY,
             date VARCHAR(50),
-            guestName TEXT,
+            "guestName" TEXT,
             floor INTEGER,
-            roomNumber INTEGER,
+            "roomNumber" INTEGER, -- <--- تم تصحيح الاسم هنا
             email TEXT,
-            mobileNumber VARCHAR(50),
+            "mobileNumber" VARCHAR(50),
             cleanliness INTEGER,
             maintenance INTEGER,
             reception INTEGER,
@@ -108,6 +109,7 @@ async function runAllTestReports() {
     }
 }
 
+// --- دالة إدخال البيانات (النسخة المصححة) ---
 app.post('/api/review', async (req, res) => {
     if (!dbReady) return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     
@@ -122,10 +124,10 @@ app.post('/api/review', async (req, res) => {
         
         const query = {
             text: `INSERT INTO reviews(
-                date, guestName, floor, "roomNumber", email, "mobileNumber",
+                date, "guestName", floor, "roomNumber", email, "mobileNumber",
                 cleanliness, maintenance, reception, bathroom, laundry,
                 security, halls, restaurant, comments
-            ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+            ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`, // <-- تم تصحيح الأسماء هنا
             values: [
                 date, guestName, floor, roomNumber, email, fullMobileNumber,
                 cleanliness, maintenance, reception, bathroom, laundry,
