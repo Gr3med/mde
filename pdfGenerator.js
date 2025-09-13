@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FINAL DESIGN MATCHING THE SCREENSHOT)
+// START OF FILE pdfGenerator.js (FINAL FIX FOR GUEST INFO DISPLAY)
 
 const puppeteer = require('puppeteer');
 
@@ -40,8 +40,8 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
                 .review-block { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
-                .guest-info-table th, .guest-info-table td { border: 1px solid #dee2e6; padding: 8px; text-align: right; }
-                .guest-info-table thead th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+                .guest-info-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; border: 1px solid #dee2e6; padding: 8px; }
+                .guest-info-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
                 .review-table th, .review-table td { border: 1px solid #dee2e6; padding: 7px; text-align: center; vertical-align: middle; } 
                 .review-table thead { background-color: var(--primary-color); color: white; } 
                 .rating-cell { font-weight: bold; } 
