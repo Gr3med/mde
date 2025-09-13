@@ -41,7 +41,7 @@
 <body>
   <div class="container">
     <div class="header">
-        <img src="./logo.jpg" alt="Marriott Aden Logo">
+        <img src="https://logowik.com/content/uploads/images/marriott-hotels-resorts-suites6228.jpg" alt="Marriott Aden Logo">
         <h1>مرحباً بكم في غرف وأجنحة فندق ماريوت عدن</h1>
         <p>استمارة إستبيان</p>
     </div>
@@ -56,7 +56,7 @@
       <p class="intro-text">
         نرجو التكرم بإبداء آرائكم حول الخدمة المقدمة لكم من قبلنا وذلك حتى يتسنى لنا تقديم أفضل خدمة لكم...
         <br>
-        للاستفادة من آرائكم نرجو التكرم بوضع إشارة أمام التقدير المناسب.
+        للاستفادة من آرائكم نرجو التكرم بوضع إشارة (✓) أمام التقدير المناسب.
       </p>
 
       <!-- Rating Sections -->
@@ -122,11 +122,11 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- إعداد الحقول ---
         const dateDisplay = document.getElementById('date-display');
         const dateInput = document.getElementById('date');
         const floorSelect = document.getElementById('floor');
         const roomSelect = document.getElementById('roomNumber');
-        
         const today = new Date();
         const formattedDate = today.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
         dateDisplay.textContent = formattedDate;
@@ -135,7 +135,6 @@
         floorSelect.addEventListener('change', function() {
             const floor = parseInt(this.value, 10);
             roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الغرفة --</option>';
-            
             if (floor) {
                 roomSelect.disabled = false;
                 for (let i = 1; i <= 20; i++) {
@@ -148,25 +147,57 @@
             }
         });
 
+        // --- منطق إرسال النموذج (النسخة الصحيحة) ---
+        const API_URL = `${window.location.origin}/api/review`;
         const form = document.getElementById('evaluationForm');
-        form.addEventListener('submit', function(event) {
+        const submitBtn = document.getElementById('submit-btn');
+        const messageArea = document.getElementById('message-area');
+
+        form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            // تحقق من صحة الحقول الإجبارية قبل الإرسال
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            const messageArea = document.getElementById('message-area');
-            messageArea.textContent = 'شكرًا لك! تم استلام تقييمك بنجاح.';
-            messageArea.className = 'message-area success';
-            messageArea.style.display = 'block';
-            form.reset();
-            dateDisplay.textContent = formattedDate;
-            dateInput.value = formattedDate;
-            roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الطابق أولاً --</option>';
-            roomSelect.disabled = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'جاري الإرسال...';
+            messageArea.style.display = 'none';
+
+            try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                if (data.mobileNumber) {
+                    data.mobileNumber = data.countryCode + data.mobileNumber;
+                }
+                delete data.countryCode;
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'خطأ في الاتصال بالخادم.');
+                
+                messageArea.textContent = result.message;
+                messageArea.className = 'message-area success';
+                form.reset();
+                dateDisplay.textContent = formattedDate;
+                dateInput.value = formattedDate;
+                roomSelect.innerHTML = '<option value="" disabled selected>-- اختر الطابق أولاً --</option>';
+                roomSelect.disabled = true;
+
+            } catch (error) {
+                messageArea.textContent = error.message;
+                messageArea.className = 'message-area error';
+            } finally {
+                messageArea.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'إرسال الاستبيان';
+            }
         });
     });
   </script>
