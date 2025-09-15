@@ -1,10 +1,8 @@
-// START OF FILE server.js (FIXED PHONE NUMBER FORMAT)
+// START OF FILE server.js (FINAL ROOMS & SUITES SCHEMA - TESTING VERSION)
 
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
 const { sendReportEmail } = require('./notifications.js');
@@ -24,7 +22,7 @@ const dbClient = new Client({
 
 let dbReady = false;
 let newReviewsCounter = 0;
-const REVIEWS_THRESHOLD = 3;
+const REVIEWS_THRESHOLD = 3; // إرسال التقرير بعد 3 تقييمات للتجربة
 
 async function setupDatabase() {
     console.log('Setting up new database schema for Rooms & Suites...');
@@ -33,11 +31,11 @@ async function setupDatabase() {
         CREATE TABLE reviews (
             id SERIAL PRIMARY KEY,
             date VARCHAR(50),
-            "guestName" TEXT,
+            guestName TEXT,
             floor INTEGER,
-            "roomNumber" INTEGER,
+            roomNumber INTEGER,
             email TEXT,
-            "mobileNumber" VARCHAR(50),
+            mobileNumber VARCHAR(50),
             cleanliness INTEGER,
             maintenance INTEGER,
             reception INTEGER,
@@ -72,10 +70,13 @@ async function runAllTestReports() {
     try {
         const statsQuery = `
             SELECT 
-                COUNT(id) as total_reviews, AVG(cleanliness) as avg_cleanliness, AVG(maintenance) as avg_maintenance,
-                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom, AVG(laundry) as avg_laundry,
-                AVG(security) as avg_security, AVG(halls) as avg_halls, AVG(restaurant) as avg_restaurant
-            FROM reviews WHERE id IN (SELECT id FROM reviews ORDER BY id DESC LIMIT 5)
+                COUNT(id) as total_reviews,
+                AVG(cleanliness) as avg_cleanliness, AVG(maintenance) as avg_maintenance,
+                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom,
+                AVG(laundry) as avg_laundry, AVG(security) as avg_security,
+                AVG(halls) as avg_halls, AVG(restaurant) as avg_restaurant
+            FROM reviews
+            WHERE id IN (SELECT id FROM reviews ORDER BY id DESC LIMIT 5)
         `;
         const recentReviewsQuery = `SELECT * FROM reviews ORDER BY id DESC LIMIT 5`;
         
@@ -86,12 +87,8 @@ async function runAllTestReports() {
         const recentReviews = recentRes.rows;
 
         if (!stats || stats.total_reviews == 0) return;
-        
-        const logoPath = path.join(__dirname, 'logo.jpg');
-        const logoBase64 = fs.readFileSync(logoPath).toString('base64');
-        const logoDataUri = `data:image/jpeg;base64,${logoBase64}`;
 
-        const { pdfBuffer, emailHtmlContent } = await createCumulativePdfReport(stats, recentReviews, logoDataUri);
+        const { pdfBuffer, emailHtmlContent } = await createCumulativePdfReport(stats, recentReviews);
         
         const attachments = [{
             filename: `Rooms-Suites-Report-${new Date().toISOString().slice(0, 10)}.pdf`,
@@ -113,18 +110,17 @@ app.post('/api/review', async (req, res) => {
     
     try {
         const {
-            date, guestName, floor, roomNumber, email, mobileNumber, countryCode,
+            date, guestName, floor, roomNumber, email, mobileNumber,
             cleanliness, maintenance, reception, bathroom, laundry,
-            security, halls, restaurant, comments
+            security, halls, restaurant, comments, countryCode
         } = req.body;
 
-        // *** الإصلاح هنا ***
-        // نضع المفتاح أولاً ثم الرقم
+        // دمج مفتاح الدولة مع الرقم فقط إذا كان الرقم موجوداً
         let fullMobileNumber = mobileNumber ? `${countryCode || ''}${mobileNumber}` : null;
         
         const query = {
             text: `INSERT INTO reviews(
-                date, "guestName", floor, "roomNumber", email, "mobileNumber",
+                date, guestName, floor, roomNumber, email, mobileNumber,
                 cleanliness, maintenance, reception, bathroom, laundry,
                 security, halls, restaurant, comments
             ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
