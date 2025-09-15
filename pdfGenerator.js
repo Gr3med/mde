@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (FINAL FIX WITH ALL GUEST FIELDS)
+// START OF FILE pdfGenerator.js (FINAL DESIGN, WIDER COLUMNS, TEXT SUMMARY)
 
 const puppeteer = require('puppeteer');
 
@@ -18,6 +18,21 @@ function getRatingColor(rating) {
     return '#6c757d';
 }
 
+function getAverageRatingText(average) {
+    const score = parseFloat(average);
+    if (score >= 4) return 'ممتاز';
+    if (score >= 2.5) return 'جيد';
+    if (score > 0) return 'ضعيف';
+    return '-';
+}
+function getAverageRatingColor(average) {
+    const score = parseFloat(average);
+    if (score >= 4) return '#28a745';
+    if (score >= 2.5) return '#ffc107';
+    if (score > 0) return '#dc3545';
+    return '#6c757d';
+}
+
 async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
     const today = new Date();
 
@@ -29,23 +44,25 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
                 :root { --primary-color: #003c71; --secondary-color: #d4a75c; } 
-                body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } 
+                body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 12px; } 
                 .page { padding: 30px; } 
                 .header { text-align: center; margin-bottom: 25px; } 
                 .header img { max-width: 180px; } 
-                h1 { color: var(--primary-color); font-size: 20px; } 
+                h1 { color: var(--primary-color); font-size: 22px; } 
                 .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
                 .summary-table { width: 100%; border-collapse: collapse; } 
-                .summary-table td { border: 1px solid #dee2e6; padding: 7px; text-align: center; } 
-                .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
-                .review-block { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+                .summary-table td { border: 1px solid #dee2e6; padding: 9px; text-align: center; } 
+                .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; width: 25%; } 
+                .summary-table .rating-cell { font-weight: bold; font-size: 14px; }
+                .review-block { margin-bottom: 25px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
-                .guest-info-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; border: 1px solid #dee2e6; padding: 8px; }
-                .guest-info-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
-                .review-table thead { background-color: var(--primary-color); color: white; } 
-                .review-table td { padding: 7px; text-align: center; vertical-align: middle; border: 1px solid #dee2e6;} 
-                .rating-cell { font-weight: bold; } 
-                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; }
+                .guest-info-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; border: 1px solid #dee2e6; padding: 9px; }
+                .guest-info-table td { border: 1px solid #dee2e6; padding: 9px; text-align: center; font-size: 13px; }
+                .review-table thead { background-color: var(--primary-color); color: white; }
+                .review-table th { padding: 9px; }
+                .review-table td { padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #dee2e6;} 
+                .rating-cell { font-weight: bold; font-size: 13px; } 
+                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; padding: 10px; }
             </style>
         </head>
         <body>
@@ -59,11 +76,26 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 <div class="section-title">ملخص متوسط التقييمات (${stats.total_reviews} تقييم)</div>
                 <table class="summary-table">
                     <tbody>
-                        <tr><td>الانترنت</td><td>${(parseFloat(stats.avg_internet) || 0).toFixed(2)}</td><td>الصيانة</td><td>${(parseFloat(stats.avg_maintenance) || 0).toFixed(2)}</td></tr>
-                        <tr><td>الاستقبال</td><td>${(parseFloat(stats.avg_reception) || 0).toFixed(2)}</td><td>دورة المياه</td><td>${(parseFloat(stats.avg_bathroom) || 0).toFixed(2)}</td></tr>
-                        <tr><td>المغسلة</td><td>${(parseFloat(stats.avg_laundry) || 0).toFixed(2)}</td><td>الأمن</td><td>${(parseFloat(stats.avg_security) || 0).toFixed(2)}</td></tr>
-                        <tr><td>الميني ماركت</td><td>${(parseFloat(stats.avg_minimarket) || 0).toFixed(2)}</td><td>صالة الاستقبال</td><td>${(parseFloat(stats.avg_lobby) || 0).toFixed(2)}</td></tr>
-                        <tr><td>المطعم</td><td>${(parseFloat(stats.avg_restaurant) || 0).toFixed(2)}</td><td>النظافة</td><td>${(parseFloat(stats.avg_cleanliness) || 0).toFixed(2)}</td></tr>
+                        <tr>
+                            <td>الانترنت</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_internet)}">${getAverageRatingText(stats.avg_internet)}</td>
+                            <td>الصيانة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_maintenance)}">${getAverageRatingText(stats.avg_maintenance)}</td>
+                        </tr>
+                        <tr>
+                            <td>الاستقبال</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_reception)}">${getAverageRatingText(stats.avg_reception)}</td>
+                            <td>دورة المياه</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_bathroom)}">${getAverageRatingText(stats.avg_bathroom)}</td>
+                        </tr>
+                        <tr>
+                            <td>المغسلة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_laundry)}">${getAverageRatingText(stats.avg_laundry)}</td>
+                            <td>الأمن</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_security)}">${getAverageRatingText(stats.avg_security)}</td>
+                        </tr>
+                        <tr>
+                            <td>الميني ماركت</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_minimarket)}">${getAverageRatingText(stats.avg_minimarket)}</td>
+                            <td>صالة الاستقبال</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_lobby)}">${getAverageRatingText(stats.avg_lobby)}</td>
+                        </tr>
+                        <tr>
+                            <td>المطعم</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_restaurant)}">${getAverageRatingText(stats.avg_restaurant)}</td>
+                            <td>النظافة</td><td class="rating-cell" style="color: ${getAverageRatingColor(stats.avg_cleanliness)}">${getAverageRatingText(stats.avg_cleanliness)}</td>
+                        </tr>
                     </tbody>
                 </table>
 
