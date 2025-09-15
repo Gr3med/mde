@@ -43,22 +43,20 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-                :root { --primary-color: #003c71; --secondary-color: #d4a75c; } 
+                :root { --primary-color: #A98A44; --secondary-color: #333; } 
                 body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 12px; } 
                 .page { padding: 30px; } 
                 .header { text-align: center; margin-bottom: 25px; } 
-                .header img { max-width: 180px; } 
-                h1 { color: var(--primary-color); font-size: 22px; } 
-                .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
+                .header h1 { color: var(--primary-color); font-size: 24px; } 
+                .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
                 .summary-table { width: 100%; border-collapse: collapse; } 
                 .summary-table td { border: 1px solid #dee2e6; padding: 9px; text-align: center; } 
-                .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; width: 25%; } 
-                .summary-table .rating-cell { font-weight: bold; font-size: 14px; }
+                .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
                 .review-block { margin-bottom: 25px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
                 .guest-info-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; border: 1px solid #dee2e6; padding: 9px; }
-                .guest-info-table td { border: 1px solid #dee2e6; padding: 9px; text-align: center; font-size: 13px; }
-                .review-table thead { background-color: var(--primary-color); color: white; }
+                .guest-info-table td { border: 1px solid #dee2e6; padding: 9px; text-align: center; }
+                .review-table thead { background-color: var(--secondary-color); color: white; }
                 .review-table th { padding: 9px; }
                 .review-table td { padding: 8px; text-align: center; vertical-align: middle; border: 1px solid #dee2e6;} 
                 .rating-cell { font-weight: bold; font-size: 13px; } 
@@ -69,7 +67,7 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
             <div class="page">
                 <div class="header">
                     <img src="${logoDataUri}" alt="Hotel Logo">
-                    <h1>تقرير استبيان</h1>
+                     <h1>تقرير استبيان فندق بانوراما</h1>
                     <p>تاريخ الإصدار: ${today.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
                 
@@ -158,3 +156,4 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
 }
 
 module.exports = { createCumulativePdfReport };
+
