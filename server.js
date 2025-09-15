@@ -1,4 +1,4 @@
-// START OF FILE server.js (PANORAMA FIELDS - TESTING VERSION)
+// START OF FILE server.js (FINAL COMBINED SCHEMA - TESTING VERSION)
 
 const express = require('express');
 const cors = require('cors');
@@ -27,15 +27,17 @@ let newReviewsCounter = 0;
 const REVIEWS_THRESHOLD = 3;
 
 async function setupDatabase() {
-    console.log('Setting up new database schema for Panorama Hotel...');
+    console.log('Setting up new combined database schema...');
     await dbClient.query('DROP TABLE IF EXISTS reviews;');
     await dbClient.query(`
         CREATE TABLE reviews (
             id SERIAL PRIMARY KEY,
             date VARCHAR(50),
-            "roomNumber" VARCHAR(50),
+            floor INTEGER,
+            "roomNumber" INTEGER,
             "guestName" TEXT,
-            "guestPhone" VARCHAR(50),
+            "guestPhone" TEXT, -- Renamed from mobileNumber
+            email TEXT,
             internet INTEGER,
             maintenance INTEGER,
             reception INTEGER,
@@ -51,7 +53,7 @@ async function setupDatabase() {
             "createdAt" TIMESTAMPTZ DEFAULT NOW()
         );
     `);
-    console.log('✅ New Panorama Hotel schema created successfully.');
+    console.log('✅ New combined schema created successfully.');
 }
 
 app.listen(PORT, () => {
@@ -69,7 +71,7 @@ app.listen(PORT, () => {
 });
 
 async function runAllTestReports() {
-    console.log("--- Starting Test Report Generation for Panorama Hotel ---");
+    console.log("--- Starting Test Report Generation ---");
     try {
         const statsQuery = `
             SELECT 
@@ -106,7 +108,6 @@ async function runAllTestReports() {
         const emailSubject = `📊 [تجريبي] تقرير استبيان الفندق (${stats.total_reviews} تقييم)`;
         await sendReportEmail(emailSubject, emailHtmlContent, attachments);
         console.log(`[TEST RUN] ✅ Hotel report sent successfully.`);
-
     } catch (err) {
         console.error(`[TEST RUN] ❌ CRITICAL: Failed to generate report:`, err);
     }
@@ -117,7 +118,7 @@ app.post('/api/review', async (req, res) => {
     
     try {
         const {
-            date, roomNumber, guestName, guestPhone,
+            date, floor, roomNumber, guestName, guestPhone, email,
             internet, maintenance, reception, bathroom, laundry, security,
             minimarket, lobby, restaurant, cleanliness,
             howDidYouHear, suggestions
@@ -125,11 +126,11 @@ app.post('/api/review', async (req, res) => {
         
         const query = {
             text: `INSERT INTO reviews(
-                date, "roomNumber", "guestName", "guestPhone", internet, maintenance, reception, bathroom,
+                date, floor, "roomNumber", "guestName", "guestPhone", email, internet, maintenance, reception, bathroom,
                 laundry, security, minimarket, lobby, restaurant, cleanliness, "howDidYouHear", suggestions
-            ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+            ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
             values: [
-                date, roomNumber, guestName, guestPhone, internet, maintenance, reception, bathroom,
+                date, floor, roomNumber, guestName, guestPhone, email, internet, maintenance, reception, bathroom,
                 laundry, security, minimarket, lobby, restaurant, cleanliness, howDidYouHear, suggestions
             ],
         };

@@ -1,4 +1,4 @@
-// START OF FILE pdfGenerator.js (PANORAMA FIELDS - MARRIOTT DESIGN)
+// START OF FILE pdfGenerator.js (FINAL COMBINED VERSION)
 
 const puppeteer = require('puppeteer');
 
@@ -29,14 +29,14 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
                 :root { --primary-color: #003c71; --secondary-color: #d4a75c; } 
-                body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 11px; } 
+                body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 10px; } 
                 .page { padding: 30px; } 
                 .header { text-align: center; margin-bottom: 25px; } 
                 .header img { max-width: 180px; } 
                 h1 { color: var(--primary-color); font-size: 20px; } 
                 .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--secondary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
                 .summary-table { width: 100%; border-collapse: collapse; } 
-                .summary-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; } 
+                .summary-table td { border: 1px solid #dee2e6; padding: 7px; text-align: center; } 
                 .summary-table td:first-child { font-weight: bold; background-color: #f8f9fa; } 
                 .review-block { margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
                 .guest-info-table, .review-table { width: 100%; border-collapse: collapse; }
@@ -45,7 +45,7 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 .review-table thead { background-color: var(--primary-color); color: white; } 
                 .review-table td { padding: 7px; text-align: center; vertical-align: middle; border: 1px solid #dee2e6;} 
                 .rating-cell { font-weight: bold; } 
-                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; }
+                .comments-cell { text-align: right !important; white-space: pre-wrap; word-wrap: break-word; padding: 10px;}
             </style>
         </head>
         <body>
@@ -71,8 +71,14 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 ${recentReviews.map(review => `
                 <div class="review-block">
                     <table class="guest-info-table">
-                         <thead><tr><th>اسم النزيل</th><th>رقم الغرفة</th><th>رقم الهاتف</th><th>التاريخ</th></tr></thead>
-                        <tbody><tr><td>${review.guestName || '-'}</td><td>${review.roomNumber || '-'}</td><td>${review.guestPhone || '-'}</td><td>${review.date || '-'}</td></tr></tbody>
+                        <thead><tr><th>اسم النزيل</th><th>الطابق</th><th>الغرفة</th><th>رقم الهاتف</th><th>التاريخ</th></tr></thead>
+                        <tbody><tr>
+                            <td>${review.guestName || '-'}</td>
+                            <td>${review.floor || '-'}</td>
+                            <td>${review.roomNumber || '-'}</td>
+                            <td>${review.guestPhone || '-'}</td>
+                            <td>${review.date || '-'}</td>
+                        </tr></tbody>
                     </table>
                     <table class="review-table">
                         <thead><tr><th>الانترنت</th><th>الصيانة</th><th>الاستقبال</th><th>دورة المياه</th><th>المغسلة</th><th>الأمن</th><th>الميني ماركت</th><th>الصالة</th><th>المطعم</th><th>النظافة</th></tr></thead>
