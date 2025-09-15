@@ -47,6 +47,7 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
                 body { font-family: 'Tajawal', sans-serif; -webkit-print-color-adjust: exact; font-size: 12px; } 
                 .page { padding: 30px; } 
                 .header { text-align: center; margin-bottom: 25px; } 
+                .header img { max-width: 180px; } 
                 .header h1 { color: var(--primary-color); font-size: 24px; } 
                 .section-title { font-size: 18px; font-weight: 700; color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; } 
                 .summary-table { width: 100%; border-collapse: collapse; } 
@@ -156,4 +157,5 @@ async function createCumulativePdfReport(stats, recentReviews, logoDataUri) {
 }
 
 module.exports = { createCumulativePdfReport };
+
 
