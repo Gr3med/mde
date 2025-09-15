@@ -1,4 +1,4 @@
-// START OF FILE server.js (FINAL COMBINED SCHEMA - TESTING VERSION)
+// START OF FILE server.js (FIXED PHONE NUMBER VARIABLE AGAIN)
 
 const express = require('express');
 const cors = require('cors');
@@ -27,7 +27,7 @@ let newReviewsCounter = 0;
 const REVIEWS_THRESHOLD = 3;
 
 async function setupDatabase() {
-    console.log('Setting up new combined database schema...');
+    console.log('Setting up final combined database schema...');
     await dbClient.query('DROP TABLE IF EXISTS reviews;');
     await dbClient.query(`
         CREATE TABLE reviews (
@@ -36,8 +36,8 @@ async function setupDatabase() {
             floor INTEGER,
             "roomNumber" INTEGER,
             "guestName" TEXT,
-            "guestPhone" TEXT, -- Renamed from mobileNumber
             email TEXT,
+            "guestPhone" VARCHAR(50),
             internet INTEGER,
             maintenance INTEGER,
             reception INTEGER,
@@ -53,7 +53,7 @@ async function setupDatabase() {
             "createdAt" TIMESTAMPTZ DEFAULT NOW()
         );
     `);
-    console.log('✅ New combined schema created successfully.');
+    console.log('✅ Final combined schema created successfully.');
 }
 
 app.listen(PORT, () => {
@@ -75,11 +75,9 @@ async function runAllTestReports() {
     try {
         const statsQuery = `
             SELECT 
-                COUNT(id) as total_reviews,
-                AVG(internet) as avg_internet, AVG(maintenance) as avg_maintenance,
-                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom,
-                AVG(laundry) as avg_laundry, AVG(security) as avg_security,
-                AVG(minimarket) as avg_minimarket, AVG(lobby) as avg_lobby,
+                COUNT(id) as total_reviews, AVG(internet) as avg_internet, AVG(maintenance) as avg_maintenance,
+                AVG(reception) as avg_reception, AVG(bathroom) as avg_bathroom, AVG(laundry) as avg_laundry,
+                AVG(security) as avg_security, AVG(minimarket) as avg_minimarket, AVG(lobby) as avg_lobby,
                 AVG(restaurant) as avg_restaurant, AVG(cleanliness) as avg_cleanliness
             FROM reviews WHERE id IN (SELECT id FROM reviews ORDER BY id DESC LIMIT 5)
         `;
@@ -117,8 +115,9 @@ app.post('/api/review', async (req, res) => {
     if (!dbReady) return res.status(503).json({ success: false, message: 'السيرفر غير جاهز حاليًا.' });
     
     try {
+        // ** الإصلاح هنا: اسم المتغير في النموذج هو mobileNumber **
         const {
-            date, floor, roomNumber, guestName, guestPhone, email,
+            date, floor, roomNumber, guestName, email, mobileNumber,
             internet, maintenance, reception, bathroom, laundry, security,
             minimarket, lobby, restaurant, cleanliness,
             howDidYouHear, suggestions
@@ -126,12 +125,14 @@ app.post('/api/review', async (req, res) => {
         
         const query = {
             text: `INSERT INTO reviews(
-                date, floor, "roomNumber", "guestName", "guestPhone", email, internet, maintenance, reception, bathroom,
-                laundry, security, minimarket, lobby, restaurant, cleanliness, "howDidYouHear", suggestions
+                date, floor, "roomNumber", "guestName", email, "guestPhone",
+                internet, maintenance, reception, bathroom, laundry, security,
+                minimarket, lobby, restaurant, cleanliness, "howDidYouHear", suggestions
             ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
             values: [
-                date, floor, roomNumber, guestName, guestPhone, email, internet, maintenance, reception, bathroom,
-                laundry, security, minimarket, lobby, restaurant, cleanliness, howDidYouHear, suggestions
+                date, floor, roomNumber, guestName, email, mobileNumber, // <--- تم تصحيح اسم المتغير هنا
+                internet, maintenance, reception, bathroom, laundry, security,
+                minimarket, lobby, restaurant, cleanliness, howDidYouHear, suggestions
             ],
         };
         
